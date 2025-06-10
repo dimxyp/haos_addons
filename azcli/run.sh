@@ -13,11 +13,22 @@ CLIENT_SECRET=$(jq --raw-output '.client_secret // empty' $CONFIG_PATH)
 # echo "Client ID: ${CLIENT_ID}"
 # echo "Client Secret: ${CLIENT_SECRET}"
 
+CONFIG_PATH="/data/config.yaml"
+
+if [ -f "$CONFIG_PATH" ]; then
+    VERSION=$(grep '^version:' "$CONFIG_PATH" | awk '{print $2}')
+    echo "Current AzureCLI Version: $VERSION"
+else
+    echo "config.yaml not found!"
+fi
 
 # Login with Service Principal using env vars from config.json
 az login --service-principal --username "$CLIENT_ID" --password "$CLIENT_SECRET" --tenant "$TENANT_ID"
 az account list --output table || echo "You may need to login using a service principal."
-#echo "Logged in as Service Principal, ready for commands."
-python3 -m flask run --host=0.0.0.0 --port=5902
+
+while true; do
+    echo "Waiting for Azure CLI command..."
+    nc -l -p 5902 -e /bin/bash -c 'read command; eval "$command"'
+done
 # Keep running to keep container alive
-tail -f /dev/null
+#tail -f /dev/null

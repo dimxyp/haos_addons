@@ -1,5 +1,5 @@
 name: "AzureCLI"
-version: "1.1.0"
+version: "1.1.1"
 slug: haazcli
 description: "Run Azure CLI commands"
 url: https://github.com/dimxyp/haos_addons/tree/main/azcli
