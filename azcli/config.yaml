@@ -1,5 +1,5 @@
 name: "AzureCLI"
-version: "1.0.3"
+version: "1.0.4"
 slug: haazcli
 description: "Run Azure CLI commands"
 startup: services
