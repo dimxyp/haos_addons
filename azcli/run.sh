@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Starting Azure CLI Add-on version 1.1.2 ..."
+echo "Starting Azure CLI Add-on version 1.1.3 ..."
 
 CONFIG_PATH="/data/options.json"
 
@@ -20,6 +20,7 @@ az account list --output table || echo "You may need to login using a service pr
 while true; do
     echo "Waiting for Azure CLI command..."
     nc -l -p 5902 | while read command; do
+        echo "Executing: $command"
         eval "$command"
     done
 done
