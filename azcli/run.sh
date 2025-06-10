@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Starting Azure CLI Add-on..."
+echo "Starting Azure CLI Add-on version 1.1.2 ..."
 
 CONFIG_PATH="/data/options.json"
 
@@ -13,22 +13,15 @@ CLIENT_SECRET=$(jq --raw-output '.client_secret // empty' $CONFIG_PATH)
 # echo "Client ID: ${CLIENT_ID}"
 # echo "Client Secret: ${CLIENT_SECRET}"
 
-CONFIG_PATH="/data/config.yaml"
-
-if [ -f "$CONFIG_PATH" ]; then
-    VERSION=$(grep '^version:' "$CONFIG_PATH" | awk '{print $2}')
-    echo "Current AzureCLI Version: $VERSION"
-else
-    echo "config.yaml not found!"
-fi
-
 # Login with Service Principal using env vars from config.json
 az login --service-principal --username "$CLIENT_ID" --password "$CLIENT_SECRET" --tenant "$TENANT_ID"
 az account list --output table || echo "You may need to login using a service principal."
 
 while true; do
     echo "Waiting for Azure CLI command..."
-    nc -l -p 5902 -e /bin/bash -c 'read command; eval "$command"'
+    nc -l -p 5902 | while read command; do
+        eval "$command"
+    done
 done
 # Keep running to keep container alive
 #tail -f /dev/null
