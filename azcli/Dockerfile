@@ -1,4 +1,4 @@
-FROM ghcr.io/hassio-addons/base-python:latest
+FROM homeassistant/amd64-base:latest
 
 # Install dependencies
 RUN apk add --no-cache python3 py3-pip bash curl jq
