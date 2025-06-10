@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Starting Azure CLI Add-on version 1.1.5 ..."
+echo "Starting Azure CLI Add-on version 1.1.6 ..."
 
 CONFIG_PATH="/data/options.json"
 
@@ -21,9 +21,8 @@ while true; do
     echo "Waiting for Azure CLI command..."
     nc -l -p 5902 | while read line; do
         if echo "$line" | grep -q "az "; then
-            command=$(echo "$line" | sed -n 's/.*az /az /p')
-            echo "Executing: $command"
-            eval "$command"
+            echo "Executing: $line"
+            eval "$line"
         fi
     done
 done
