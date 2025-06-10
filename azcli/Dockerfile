@@ -8,6 +8,7 @@ RUN apk add --no-cache --virtual=build gcc musl-dev python3-dev libffi-dev opens
     && pip3 install --no-cache-dir --prefer-binary azure-cli \
     && apk del build
 
+RUN pip install --no-cache-dir flask
 # Copy and set up the script
 COPY run.sh /run.sh
 RUN chmod +x /run.sh
