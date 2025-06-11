@@ -1,0 +1,23 @@
+name: "AzureRestCLI"
+version: "1.0.0"
+slug: haazrestcli
+description: "Run Azure CLI Rest commands"
+url: https://github.com/dimxyp/haos_addons/tree/main/azrestcli
+panel_icon: mdi:powershell
+startup: services
+boot: auto
+init: false
+ingress: false
+arch:
+  - amd64
+host_network: true
+options:
+  tenant_id: null
+  client_id: null
+  client_secret: null
+schema:
+  tenant_id: str
+  client_id: str
+  client_secret: password
+ports:
+  5902/tcp: 5902
