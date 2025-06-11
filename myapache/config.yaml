@@ -1,12 +1,10 @@
 name: MyApache
-version: 2.13.2
+version: 0.0.1
 slug: myapache
 description: Open Source Webserver with PHP and MariaDB.
 url: https://github.com/dimxyp/haos_addons/tree/main/myapache
 arch:
   - amd64
-image: ghcr.io/faserf/apache2-{arch}
-# webui: http://[HOST]:[PORT:80]
 map:
   - ssl:rw
   - media:rw
@@ -15,7 +13,7 @@ ingress: true
 init: false
 panel_icon: mdi:web-box
 options:
-  document_root: /share/htdocs
+  document_root: /share/ipam
   php_ini: default
   default_conf: default
   default_ssl_conf: default
