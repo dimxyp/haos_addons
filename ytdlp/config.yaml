@@ -1,5 +1,5 @@
-name: "YTDLP"
-version: "1.0.0"
+name: "YT-dlp"
+version: "1.0.1"
 slug: ytdlp
 description: "yt-dlp for ha"
 url: https://github.com/dimxyp/haos_addons/tree/main/ytdlp
@@ -13,7 +13,11 @@ arch:
 host_network: true
 options:
   port: 5903
+  subfolder: ytdowns
 schema:
   port: int
+  subfolder: str
 ports:
   5903/tcp: 5903
+map:
+  - media:rw

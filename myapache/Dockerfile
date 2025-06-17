@@ -1,18 +1,14 @@
-FROM php:7.0-apache
+FROM python:3.11-slim
 
-# Install dependencies for SQLite and other PHP extensions
-RUN apt-get update && apt-get install -y \
-    libsqlite3-dev \
-    libzip-dev \
-    unzip \
-    && docker-php-ext-install pdo pdo_sqlite sqlite3 \
-    && a2enmod rewrite headers
+WORKDIR /app
 
-# Copy your app files to Apache web root (adjust as needed)
-# COPY ./ipam /var/www/html/ipam
+# Install dependencies
+RUN apt-get update && apt-get install -y ffmpeg \
+  && pip install flask yt-dlp
 
-# Set working directory (optional)
-WORKDIR /var/www/html
+# Copy only app.py
+COPY app.py .
 
-# Expose port 80 (default Apache port)
-EXPOSE 80
+EXPOSE 5903
+
+CMD ["python", "app.py"]
