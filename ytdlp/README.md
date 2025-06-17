@@ -1,7 +1,4 @@
-Home Assistant Community Add-on: Azure CLI
+Home Assistant Add-on: Use yt-dlp from rest commands
 
-About
 
-Execute AZ CLI commands via HA
 
-📚 
