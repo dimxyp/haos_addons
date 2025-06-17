@@ -80,7 +80,6 @@
     "WEB_GUNICORN": "true",
     "WORKERS_PER_CORE": "0.5"
   },
-  "image": "ghcr.io/alexbelgium/mealie-amd64",
   "ingress": true,
   "map": [
     "addon_config:rw",
@@ -119,5 +118,5 @@
   "slug": "mymealie",
   "udev": true,
   "url": "https://github.com/alexbelgium/hassio-addons",
-  "version": "v1.0.1"
+  "version": "v1.0.2"
 }
