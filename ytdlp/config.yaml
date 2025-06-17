@@ -3,18 +3,17 @@ version: "1.0.0"
 slug: ytdlp
 description: "yt-dlp for ha"
 url: https://github.com/dimxyp/haos_addons/tree/main/ytdlp
+panel_icon: mdi:download
 startup: services
 boot: auto
 init: false
-panel_icon: mdi:download
 ingress: false
+arch:
+  - amd64
 host_network: true
-
 options:
   port: 5903
-
 schema:
   port: int
-
 ports:
   5903/tcp: 5903
