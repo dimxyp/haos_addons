@@ -1,5 +1,5 @@
 name: MariaDB Backup
-version: "1.1"
+version: "1.0"
 slug: mariadb-backup
 description: Backup MariaDB databases using mysqldump
 startup: once
@@ -10,6 +10,8 @@ arch:
 init: false
 host_network: true
 privileged: []
+map:
+  - share:rw
 options:
   DB_HOST: core-mariadb
   DB_USER: homeassistant
