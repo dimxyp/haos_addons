@@ -13,17 +13,32 @@ DB_HOST=$(jq --raw-output '.DB_HOST // empty' $CONFIG_PATH)
 DB_USER=$(jq --raw-output '.DB_USER // empty' $CONFIG_PATH)
 DB_PASS=$(jq --raw-output '.DB_PASS // empty' $CONFIG_PATH)
 
-# Output folder passed from config
 OUTPUT_FOLDER="/share/DBbackups"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-
 mkdir -p "$OUTPUT_FOLDER"
+
+# Date vars
+TODAY=$(date +"%Y%m%d")
+ARCHIVE_FOLDER="$OUTPUT_FOLDER/$TODAY"
+ARCHIVE_FILE="backup_${TODAY}.tar.gz"
+
+# Housekeeping: Archive previous backups if any
+if compgen -G "$OUTPUT_FOLDER/*.sql" > /dev/null; then
+  echo "[INFO] Archiving old backups into $ARCHIVE_FOLDER/$ARCHIVE_FILE ..."
+  mkdir -p "$ARCHIVE_FOLDER"
+  tar -czf "$ARCHIVE_FOLDER/$ARCHIVE_FILE" -C "$OUTPUT_FOLDER" -- *.sql
+  echo "[INFO] Removing old sql files from $OUTPUT_FOLDER ..."
+  rm "$OUTPUT_FOLDER"/*.sql
+else
+  echo "[INFO] No previous SQL backup files found to archive."
+fi
 
 # Get the list of databases
 DATABASES=$(mariadb --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" -e "SHOW DATABASES;" | tail -n +2)
 
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
 for DB in $DATABASES; do
-  # Skip internal system DBs if you want (optional)
+  # Skip system DBs
   if [[ "$DB" == "information_schema" ]] || [[ "$DB" == "performance_schema" ]] || [[ "$DB" == "mysql" ]] || [[ "$DB" == "sys" ]]; then
     echo "[INFO] Skipping system database: $DB"
     continue
