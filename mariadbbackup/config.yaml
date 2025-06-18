@@ -11,6 +11,10 @@ init: false
 host_network: true
 privileged: []
 options:
-  output_folder: "/backup/sql"
+  DB_HOST: core-mariadb
+  DB_USER: homeassistant
+  DB_PASS: yourpassword
 schema:
-  output_folder: str
+  DB_HOST: str
+  DB_USER: str
+  DB_PASS: str
