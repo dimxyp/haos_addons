@@ -21,7 +21,7 @@ OUTPUT_FILE="$OUTPUT_FOLDER/mariadb_backup_$TIMESTAMP.sql"
 mkdir -p "$OUTPUT_FOLDER"
 
 echo "[INFO] Dumping all databases to $OUTPUT_FILE..."
-mysqldump --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" --all-databases > "$OUTPUT_FILE"
+mariadb-dump --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" --all-databases > "$OUTPUT_FILE"
 
 
 if [ $? -eq 0 ]; then
