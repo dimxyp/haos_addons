@@ -9,7 +9,7 @@ CONFIG_PATH="/data/options.json"
 #DB_USER="homeassistant"
 #DB_PASS=$(cat /data/.secret_mariadb | tr -d '\n')
 
-DB_HOST=$(jq --raw-output '.DB_PASS // empty' $CONFIG_PATH)
+DB_HOST=$(jq --raw-output '.DB_HOST // empty' $CONFIG_PATH)
 DB_USER=$(jq --raw-output '.DB_USER // empty' $CONFIG_PATH)
 DB_PASS=$(jq --raw-output '.DB_PASS // empty' $CONFIG_PATH)
 
