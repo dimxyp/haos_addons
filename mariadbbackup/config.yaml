@@ -1,0 +1,16 @@
+name: MariaDB Backup
+version: "1.0"
+slug: mariadb-backup
+description: Backup MariaDB databases using mysqldump
+startup: once
+boot: manual
+arch:
+  - amd64
+  - aarch64
+init: false
+host_network: true
+privileged: []
+options:
+  output_folder: "/backup/sql"
+schema:
+  output_folder: str
