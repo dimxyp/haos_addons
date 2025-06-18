@@ -14,7 +14,7 @@ DB_USER=$(jq --raw-output '.DB_USER // empty' $CONFIG_PATH)
 DB_PASS=$(jq --raw-output '.DB_PASS // empty' $CONFIG_PATH)
 
 # Output folder passed from config
-OUTPUT_FOLDER="${OUTPUT_FOLDER:-/backup/sql}"
+OUTPUT_FOLDER="/share/sqlbackups"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_FILE="$OUTPUT_FOLDER/mariadb_backup_$TIMESTAMP.sql"
 
