@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache mariadb-client bash
+RUN apk add --no-cache mariadb-client bash jq
 
 COPY run.sh /run.sh
 RUN chmod a+x /run.sh
