@@ -1,5 +1,5 @@
 name: MariaDB Backup
-version: "1.6"
+version: "1.7"
 slug: mariadb-backup
 description: Backup MariaDB databases using mysqldump
 startup: once
