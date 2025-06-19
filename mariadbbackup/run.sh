@@ -1,58 +1,62 @@
 #!/usr/bin/env bash
 set -e
-echo "[INFO] Starting MySQL dump process..."
 
 CONFIG_PATH="/data/options.json"
 
-# These values can be modified if you have different credentials
-#DB_HOST="core-mariadb"
-#DB_USER="homeassistant"
-#DB_PASS=$(cat /data/.secret_mariadb | tr -d '\n')
+echo "[INFO] Loading configuration..."
 
-DB_HOST=$(jq --raw-output '.DB_HOST // empty' $CONFIG_PATH)
-DB_USER=$(jq --raw-output '.DB_USER // empty' $CONFIG_PATH)
-DB_PASS=$(jq --raw-output '.DB_PASS // empty' $CONFIG_PATH)
+DB_HOST=$(jq --raw-output '.DB_HOST // "core-mariadb"' "$CONFIG_PATH")
+DB_USER=$(jq --raw-output '.DB_USER // "homeassistant"' "$CONFIG_PATH")
+DB_PASS=$(jq --raw-output '.DB_PASS // empty' "$CONFIG_PATH")
 
 OUTPUT_FOLDER="/share/DBbackups"
 mkdir -p "$OUTPUT_FOLDER"
 
-# Date vars
+# Date and time
 TODAY=$(date +"%Y%m%d")
-ARCHIVE_FOLDER="$OUTPUT_FOLDER/$TODAY"
-ARCHIVE_FILE="backup_${TODAY}.tar.gz"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+TIMESTP_LOG=$(date +"%Y%m%d%H%M")
 
-# Housekeeping: Archive previous backups if any
-if compgen -G "$OUTPUT_FOLDER/*.sql" > /dev/null; then
-  echo "[INFO] Archiving old backups into $ARCHIVE_FOLDER/$ARCHIVE_FILE ..."
+ARCHIVE_FOLDER="$OUTPUT_FOLDER/$TODAY"
+ARCHIVE_FILE="$ARCHIVE_FOLDER/backup_${TODAY}.tar.gz"
+
+echo "$TIMESTP_LOG [INFO] Starting MariaDB dump process..."
+
+# Housekeeping: Archive previous .sql files if any
+SQL_FILES=$(find "$OUTPUT_FOLDER" -maxdepth 1 -type f -name '*.sql')
+
+if [ -n "$SQL_FILES" ]; then
+  echo "$TIMESTP_LOG [INFO] Archiving old backups into $ARCHIVE_FILE ..."
   mkdir -p "$ARCHIVE_FOLDER"
-  tar -czf "$ARCHIVE_FOLDER/$ARCHIVE_FILE" -C "$OUTPUT_FOLDER" -- *.sql
-  echo "[INFO] Removing old sql files from $OUTPUT_FOLDER ..."
-  rm "$OUTPUT_FOLDER"/*.sql
+  
+  # Use tar with full file paths
+  tar -czf "$ARCHIVE_FILE" -C "$OUTPUT_FOLDER" $(basename -a $SQL_FILES)
+
+  echo "$TIMESTP_LOG [INFO] Removing old .sql files from $OUTPUT_FOLDER ..."
+  rm -f $SQL_FILES
 else
-  echo "[INFO] No previous SQL backup files found to archive."
+  echo "$TIMESTP_LOG [INFO] No previous SQL backup files found to archive."
 fi
 
 # Get the list of databases
 DATABASES=$(mariadb --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" -e "SHOW DATABASES;" | tail -n +2)
 
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-
 for DB in $DATABASES; do
-  # Skip system DBs
-  if [[ "$DB" == "information_schema" ]] || [[ "$DB" == "performance_schema" ]] || [[ "$DB" == "mysql" ]] || [[ "$DB" == "sys" ]]; then
-    echo "[INFO] Skipping system database: $DB"
+  # Skip system databases
+  if [[ "$DB" == "information_schema" || "$DB" == "performance_schema" || "$DB" == "mysql" || "$DB" == "sys" ]]; then
+    echo "$TIMESTP_LOG [INFO] Skipping system database: $DB"
     continue
   fi
 
   OUTPUT_FILE="$OUTPUT_FOLDER/${DB}_backup_$TIMESTAMP.sql"
-  echo "[INFO] Backing up database: $DB to $OUTPUT_FILE"
-  mariadb-dump --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB" > "$OUTPUT_FILE"
-
-  if [ $? -eq 0 ]; then
-    echo "[SUCCESS] Database $DB backed up successfully."
+  echo "$TIMESTP_LOG [INFO] Backing up database: $DB → $OUTPUT_FILE"
+  
+  if mariadb-dump --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB" > "$OUTPUT_FILE"; then
+    echo "$TIMESTP_LOG [SUCCESS] Database $DB backed up successfully."
   else
-    echo "[ERROR] Failed to backup database $DB."
+    echo "$TIMESTP_LOG [ERROR] Failed to back up database $DB."
+    rm -f "$OUTPUT_FILE"
   fi
 done
 
-echo "[INFO] All done."
+echo "$TIMESTP_LOG [INFO] Backup process completed."
