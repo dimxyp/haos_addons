@@ -22,7 +22,14 @@ def download():
     if media_type == "video":
         options = ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4', '-o', f'{target_dir}/%(title)s.%(ext)s']
     else:  # audio
-        options = ['-x', '--audio-format', 'mp3', '-o', f'{target_dir}/%(title)s.%(ext)s']
+        options = [
+            '-x',
+            '--audio-format', 'mp3',
+            '--audio-quality', '0',  # best quality
+            '--prefer-ffmpeg',
+            '--ffmpeg-location', '/usr/bin/ffmpeg',
+            '-o', f'{target_dir}/%(title)s.%(ext)s'
+        ]
 
     try:
         subprocess.run(['yt-dlp', url] + options, check=True)
