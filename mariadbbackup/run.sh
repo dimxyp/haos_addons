@@ -59,4 +59,8 @@ for DB in $DATABASES; do
   fi
 done
 
+# Housekeeping: Delete folders older than two months
+echo "$TIMESTP_LOG [INFO] Performing housekeeping to delete folders older than two months..."
+find "$OUTPUT_FOLDER" -type d -mtime +60 -exec rm -rf {} +
+
 echo "$TIMESTP_LOG [INFO] Backup process completed."
