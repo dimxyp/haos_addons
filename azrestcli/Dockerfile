@@ -8,7 +8,7 @@ RUN apk add --no-cache --virtual=build gcc musl-dev python3-dev libffi-dev opens
     && pip3 install --no-cache-dir --prefer-binary azure-cli flask \
     && apk del build \
     # Fix broken az.completion reference in .bashrc
-    && sed -i '/az.completion/d' /root/.bashrc
+    && if [ -f /root/.bashrc ]; then sed -i '/az\.completion/d' /root/.bashrc; fi
 
 # Copy the script
 COPY app.py /app.py
