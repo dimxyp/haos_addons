@@ -1,4 +1,4 @@
-# Home Assistant Community Add-on: Azure CLI
+# Home Assistant Custom Add-on: Azure CLI
 
 ## 🔧 About
 
