@@ -1,5 +1,5 @@
 name: "AzureRestCLI"
-version: "1.0.3"
+version: "1.0.4"
 slug: haazrestcli
 description: "Run Azure CLI Rest commands"
 url: https://github.com/dimxyp/haos_addons/tree/main/azrestcli
