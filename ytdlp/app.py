@@ -2,6 +2,13 @@ from flask import Flask, request, jsonify
 import subprocess
 import os
 
+#versions on HA
+import flask
+import yt_dlp
+
+print(f"Starting app with Flask version: {flask.__version__}")
+print(f"Starting app with yt-dlp version: {yt_dlp.version.__version__}")
+# 
 app = Flask(__name__)
 
 MEDIA_PATH = "/media"
