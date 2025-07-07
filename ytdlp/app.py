@@ -9,8 +9,8 @@ MEDIA_PATH = "/media"
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
-    url = data.get('download_url')       
-    media_type = data.get('media_type')  
+    url = data.get('download_url')
+    media_type = data.get('media_type')
 
     if not url or media_type not in ("video", "audio", "stream"):
         return jsonify({"error": "Missing or invalid parameters"}), 400
@@ -28,14 +28,13 @@ def download():
         except subprocess.CalledProcessError as e:
             return jsonify({"error": "yt-dlp failed", "details": e.stderr}), 500
 
-    # For video/audio download
     subfolder = request.args.get("subfolder", "ytdowns")
     target_dir = os.path.join(MEDIA_PATH, subfolder, media_type)
     os.makedirs(target_dir, exist_ok=True)
 
     if media_type == "video":
         options = ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4', '-o', f'{target_dir}/%(title)s.%(ext)s']
-    else:  # audio
+    else:
         options = [
             '-x',
             '--audio-format', 'mp3',
@@ -53,7 +52,7 @@ def download():
 
 @app.route('/')
 def index():
-    return "yt-dlp unified downloader/streamer is running."
+    return "yt-dlp unified streamer/downloader is running."
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5903)
