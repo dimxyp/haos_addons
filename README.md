@@ -1,4 +1,4 @@
-# 🧩 Home Assistant OS Add-ons by @dimxyp
+# 🧩 Home Assistant OS Add-ons by @dx
 
 This repository contains custom add-ons for [Home Assistant OS](https://www.home-assistant.io/installation/). These tools extend the capabilities of your HA instance by integrating with cloud services, managing backups, and offering useful system utilities.
 
