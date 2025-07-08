@@ -12,7 +12,7 @@ The `run.sh` script:
 
 1. Connects to the running MariaDB container used by Home Assistant.
 2. Runs a `mariadb-dump` of all databases using credentials stored in `/data/secrets.txt`.
-3. Saves the `.sql` backup file to `/share/DBbackups/mariadb_backup_<DATE>.sql`.  # I will change this to use variable location
+3. Saves the `.sql` backup file to `/share/DBbackups/mariadb_backup_<DATE>.sql`.  # I know this need change to use variable location :P
 
 ---
 
