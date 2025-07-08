@@ -3,11 +3,14 @@ import subprocess
 import os
 
 #versions on HA
-import flask
+import importlib.metadata
 import yt_dlp
 
-print(f"Starting app with Flask version: {flask.__version__}")
-print(f"Starting app with yt-dlp version: {yt_dlp.version.__version__}")
+flask_version = importlib.metadata.version("flask")
+ytdlp_version = yt_dlp.version.__version__
+
+print(f"Starting app with Flask version: {flask_version}")
+print(f"Starting app with yt-dlp version: {ytdlp_version}")
 # 
 app = Flask(__name__)
 
