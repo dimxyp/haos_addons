@@ -22,7 +22,7 @@ You must provide database credentials in the add-on configuration:
 
 ```json
 {
-  "host": "core-mariadb",
+  "host": "core-mariadb",   # your HA MariaDB - https://github.com/home-assistant/addons/tree/master/mariadb
   "port": 3306,
   "username": "homeassistant",
   "password": "YOUR_DB_PASSWORD"
