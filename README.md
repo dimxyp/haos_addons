@@ -34,7 +34,7 @@ Run Azure CLI (`az`) commands from within Home Assistant.
 
 ### 🔹 [Azure REST CLI (azrestcli)](https://github.com/dimxyp/haos_addons/tree/main/azrestcli)
 
-Low-level add-on to execute raw Azure REST API requests (using `curl` with bearer token). Ideal for calling Azure endpoints not covered by `azcli`.
+Low-level add-on to execute raw Azure CLI requests using Rest Commands `curl` with bearer token). 
 
 - Uses `curl` + token file
 - Works with ARM, MS Graph, AVD, etc.
