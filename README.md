@@ -12,7 +12,7 @@ This repository contains custom add-ons for [Home Assistant OS](https://www.home
 
 Create manual or scheduled `.sql` dumps of your MariaDB `homeassistant` database. Useful for maintaining regular backups.
 
-- Dumps stored in `/backup/`
+- Dumps stored in `/shared/`
 - Reads DB credentials from configuration
 - Output: `mariadb_backup_<date>.sql`
 
