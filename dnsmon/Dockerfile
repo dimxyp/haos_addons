@@ -4,7 +4,6 @@ WORKDIR /app
 
 COPY run.sh /app/run.sh
 COPY nslookup_monitor.py /app/nslookup_monitor.py
-COPY requirements.txt /app/requirements.txt
 COPY urls.txt /app/urls.txt
 COPY ip_store.json /app/ip_store.json
 
