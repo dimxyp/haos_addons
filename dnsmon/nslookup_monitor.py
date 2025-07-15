@@ -84,7 +84,7 @@ def main_loop():
             hostname = options.get(url_key)
 
             #  Skip unset or "null" entries
-            if not hostname or str(hostname).lower() == "NULL":
+            if str(hostname).strip().upper() == "NULL":
                 continue
 
             ip = resolve_ipv4(hostname)
@@ -96,8 +96,8 @@ def main_loop():
                 update_input_text(entity_id, ip, token, haip)
                 previous_ips[url_key] = ip
                 changed = True
-            else:
-                print(f"[OK] {hostname} IP unchanged: {ip}")
+            # else:
+            #     print(f"[OK] {hostname} IP unchanged: {ip}")
 
         if changed:
             save_ips(previous_ips)
