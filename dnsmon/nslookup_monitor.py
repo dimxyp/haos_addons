@@ -1,68 +1,84 @@
 import json
 import os
-import subprocess
+import socket
+import time
 import requests
 
-IP_STORE_FILE = '/app/ip_store.json'
-CONFIG_FILE = '/data/options.json' 
-HA_URL = "https://192.168.1.250/core/api/states"
+OPTIONS_FILE = '/data/options.json'
+STORE_FILE = '/data/ip_store.json'
 
-def load_config():
-    with open(CONFIG_FILE, 'r') as f:
+def load_options():
+    with open(OPTIONS_FILE) as f:
         return json.load(f)
 
-def load_ip_store():
-    if not os.path.exists(IP_STORE_FILE):
-        return {}
-    with open(IP_STORE_FILE, 'r') as f:
-        return json.load(f)
+def load_previous_ips():
+    if os.path.exists(STORE_FILE):
+        with open(STORE_FILE) as f:
+            return json.load(f)
+    return {}
 
-def save_ip_store(store):
-    with open(IP_STORE_FILE, 'w') as f:
-        json.dump(store, f)
+def save_ips(ip_dict):
+    with open(STORE_FILE, 'w') as f:
+        json.dump(ip_dict, f)
 
-def resolve_ip(domain):
+def resolve_ipv4(hostname):
     try:
-        result = subprocess.check_output(["nslookup", domain], universal_newlines=True)
-        for line in result.splitlines():
-            if "Address:" in line and not line.startswith("Server:"):
-                return line.split("Address:")[1].strip()
+        return socket.gethostbyname(hostname)
     except Exception as e:
-        print(f"Error resolving {domain}: {e}")
-    return None
+        print(f"[ERROR] Could not resolve {hostname}: {e}")
+        return None
 
-def update_input_text(entity_id, new_ip, token):
+def update_input_text(entity_id, value, token, haip):
+    url = f"https://{haip}:8123/api/services/input_text/set_value"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
     }
-    url = f"{HA_URL}/{entity_id}"
-    data = {
-        "state": new_ip
+    payload = {
+        "entity_id": entity_id,
+        "value": value
     }
-    r = requests.post(url, headers=headers, json=data)
-    if r.status_code != 200:
-        print(f"Failed to update {entity_id}: {r.text}")
 
-def main():
-    config = load_config()
-    token = config['token']
-    urls = config.get("urls", {})
-    store = load_ip_store()
-    changed = False
+    try:
+        response = requests.post(url, headers=headers, json=payload, verify=False)
+        if response.status_code == 200:
+            print(f"[INFO] Updated {entity_id} to {value}")
+        else:
+            print(f"[ERROR] Failed to update {entity_id}: {response.status_code} - {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] API request failed: {e}")
 
-    for key, domain in urls.items():
-        entity_id = f"input_text.{key.lower()}"
-        ip = resolve_ip(domain)
-        if not ip:
-            continue
-        if store.get(key) != ip:
-            update_input_text(entity_id, ip, token)
-            store[key] = ip
-            changed = True
+def main_loop():
+    options = load_options()
+    haip = options['haip']
+    token = options['token']
 
-    if changed:
-        save_ip_store(store)
+    previous_ips = load_previous_ips()
+
+    while True:
+        changed = False
+
+        for i in range(1, 6):
+            url_key = f"URL{i}"
+            entity_id = f"input_text.url{i}"
+            hostname = options.get(url_key)
+
+            if hostname:
+                ip = resolve_ipv4(hostname)
+                if not ip:
+                    continue
+
+                if previous_ips.get(url_key) != ip:
+                    update_input_text(entity_id, ip, token, haip)
+                    previous_ips[url_key] = ip
+                    changed = True
+                else:
+                    print(f"[OK] {hostname} IP unchanged: {ip}")
+
+        if changed:
+            save_ips(previous_ips)
+
+        time.sleep(300)  # 5 minutes
 
 if __name__ == "__main__":
-    main()
+    main_loop()
