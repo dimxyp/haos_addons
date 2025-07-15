@@ -1,0 +1,28 @@
+name: "DNS Monitor"
+version: "0.0.1"
+slug: dns_ip_monitor
+description: "Checks IP of up to 5 URLs and updates input_texts on change."
+url: https://github.com/dimxyp/haos_addons/tree/main/dnsmon
+panel_icon: mdi:ip-network-outline
+startup: application
+boot: auto
+init: false
+ingress: false
+arch:
+  - amd64
+host_network: true
+options:
+  token: null
+  URL1: null
+  URL2: null
+  URL3: null
+  URL4: null
+  URL5: null
+schema:
+  token: password
+  URL1: str
+  URL2: str
+  URL3: str
+  URL4: str
+  URL5: str
+
