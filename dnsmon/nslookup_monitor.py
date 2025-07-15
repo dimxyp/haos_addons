@@ -4,6 +4,9 @@ import socket
 import time
 import requests
 import urllib3
+import functools
+print = functools.partial(print, flush=True)
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 OPTIONS_FILE = '/data/options.json'
@@ -49,6 +52,21 @@ def update_input_text(entity_id, value, token, haip):
             print(f"[ERROR] Failed to update {entity_id}: {response.status_code} - {response.text}")
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] API request failed: {e}")
+
+def print_banner():
+    print(r"""
+     _      
+    | |     
+  __| |_  __
+ / _` \ \/ /
+| (_| |>  < 
+ \__,_/_/\_\
+            
+""", flush=True)
+
+# Call the banner function before starting main loop
+print_banner()
+print(f"[WELCOME] Custom DNS Monitor started. Version: 0.0.5", flush=True)
 
 def main_loop():
     options = load_options()
