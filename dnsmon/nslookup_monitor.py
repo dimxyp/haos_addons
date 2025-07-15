@@ -83,18 +83,21 @@ def main_loop():
             entity_id = f"input_text.url{i}"
             hostname = options.get(url_key)
 
-            if hostname:
-                ip = resolve_ipv4(hostname)
-                if not ip:
-                    continue
+            #  Skip unset or "null" entries
+            if not hostname or str(hostname).lower() == "NULL":
+                continue
 
-                if previous_ips.get(url_key) != ip:
-                    print(f"[CHANGE] {hostname} changed from {previous_ips.get(url_key)} to {ip}")
-                    update_input_text(entity_id, ip, token, haip)
-                    previous_ips[url_key] = ip
-                    changed = True
-                else:
-                    print(f"[OK] {hostname} IP unchanged: {ip}")
+            ip = resolve_ipv4(hostname)
+            if not ip:
+                continue
+
+            if previous_ips.get(url_key) != ip:
+                print(f"[CHANGE] {hostname} changed from {previous_ips.get(url_key)} to {ip}")
+                update_input_text(entity_id, ip, token, haip)
+                previous_ips[url_key] = ip
+                changed = True
+            else:
+                print(f"[OK] {hostname} IP unchanged: {ip}")
 
         if changed:
             save_ips(previous_ips)
