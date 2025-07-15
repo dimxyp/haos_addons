@@ -3,6 +3,8 @@ import os
 import socket
 import time
 import requests
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 OPTIONS_FILE = '/data/options.json'
 STORE_FILE = '/data/ip_store.json'
