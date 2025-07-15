@@ -12,6 +12,7 @@ arch:
   - amd64
 host_network: true
 options:
+  haip: null
   token: null
   URL1: null
   URL2: null
@@ -19,6 +20,7 @@ options:
   URL4: null
   URL5: null
 schema:
+  haip: str
   token: password
   URL1: str
   URL2: str
