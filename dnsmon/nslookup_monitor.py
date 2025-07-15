@@ -71,6 +71,7 @@ def main_loop():
                     continue
 
                 if previous_ips.get(url_key) != ip:
+                    print(f"[CHANGE] {hostname} changed from {previous_ips.get(url_key)} to {ip}")
                     update_input_text(entity_id, ip, token, haip)
                     previous_ips[url_key] = ip
                     changed = True
