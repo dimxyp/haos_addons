@@ -5,7 +5,12 @@ import time
 import requests
 import urllib3
 import functools
+from datetime import datetime
 print = functools.partial(print, flush=True)
+
+def ts() -> str:
+    """Return current ts() string."""
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -30,7 +35,7 @@ def resolve_ipv4(hostname):
     try:
         return socket.gethostbyname(hostname)
     except Exception as e:
-        print(f"[ERROR] Could not resolve {hostname}: {e}")
+        print(f"[{ts()}] [ERROR] Could not resolve {hostname}: {e}")
         return None
 
 def update_input_text(entity_id, value, token, haip):
@@ -47,11 +52,11 @@ def update_input_text(entity_id, value, token, haip):
     try:
         response = requests.post(url, headers=headers, json=payload, verify=False)
         if response.status_code == 200:
-            print(f"[INFO] Updated {entity_id} to {value}")
+            print(f"[{ts()}] [INFO] Updated {entity_id} to {value}")
         else:
-            print(f"[ERROR] Failed to update {entity_id}: {response.status_code} - {response.text}")
+            print(f"[{ts()}] [ERROR] Failed to update {entity_id}: {response.status_code} - {response.text}")
     except requests.exceptions.RequestException as e:
-        print(f"[ERROR] API request failed: {e}")
+        print(f"[{ts()}] [ERROR] API request failed: {e}")
 
 def print_banner():
     print(r"""
@@ -66,8 +71,8 @@ def print_banner():
 
 # Call the banner function before starting main loop
 print_banner()
-print(f"[WELCOME] Custom DNS Monitor started. Version: 0.0.7", flush=True)
-print(f"====================================================", flush=True)
+print(f"[{ts()}] [WELCOME] Custom DNS Monitor started. Version: 0.0.7", flush=True)
+print(f"[{ts()}] ====================================================", flush=True)
 def main_loop():
     options = load_options()
     haip = options['haip']
@@ -92,12 +97,12 @@ def main_loop():
                 continue
 
             if previous_ips.get(url_key) != ip:
-                print(f"[CHANGE] {hostname} changed from {previous_ips.get(url_key)} to {ip}")
+                print(f"[{ts()}] [CHANGE] {hostname} changed from {previous_ips.get(url_key)} to {ip}")
                 update_input_text(entity_id, ip, token, haip)
                 previous_ips[url_key] = ip
                 changed = True
             # else:
-            #     print(f"[OK] {hostname} IP unchanged: {ip}")
+            #     print(f"[{ts()}] [OK] {hostname} IP unchanged: {ip}")
 
         if changed:
             save_ips(previous_ips)
