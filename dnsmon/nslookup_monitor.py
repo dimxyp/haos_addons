@@ -71,7 +71,7 @@ def print_banner():
 
 # Call the banner function before starting main loop
 print_banner()
-print(f"[{ts()}] [WELCOME] Custom DNS Monitor started. Version: 0.0.7", flush=True)
+print(f"[{ts()}] [WELCOME] Custom DNS Monitor started. Version: 0.1.0", flush=True)
 print(f"[{ts()}] ====================================================", flush=True)
 def main_loop():
     options = load_options()
