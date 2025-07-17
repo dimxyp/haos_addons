@@ -4,6 +4,8 @@ import socket
 import time
 import requests
 import urllib3
+import subprocess
+import re
 import functools
 from datetime import datetime
 print = functools.partial(print, flush=True)
@@ -31,12 +33,39 @@ def save_ips(ip_dict):
     with open(STORE_FILE, 'w') as f:
         json.dump(ip_dict, f)
 
+#old way
+# def resolve_ipv4(hostname):
+#     try:
+#         return socket.gethostbyname(hostname)
+#     except Exception as e:
+#         print(f"[{ts()}] [ERROR] Could not resolve {hostname}: {e}")
+#         return None
+
 def resolve_ipv4(hostname):
     try:
-        return socket.gethostbyname(hostname)
-    except Exception as e:
-        print(f"[{ts()}] [ERROR] Could not resolve {hostname}: {e}")
+        result = subprocess.run(
+            ["dig", "+short", "+time=5", "+tries=2", hostname],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10
+        )
+        output = result.stdout.strip()
+
+        # Filter for the first IPv4 (ignore empty or IPv6)
+        for line in output.splitlines():
+            if re.match(r'^\d{1,3}(\.\d{1,3}){3}$', line):
+                return line
+
+        print(f"[{ts()}] [ERROR] No valid IPv4 found for {hostname}. Output:\n{output}")
         return None
+
+    except subprocess.TimeoutExpired:
+        print(f"[{ts()}] [ERROR] DNS lookup for {hostname} timed out")
+    except Exception as e:
+        print(f"[{ts()}] [ERROR] Failed to resolve {hostname} using dig: {e}")
+    
+    return None
 
 def update_input_text(entity_id, value, token, haip):
     url = f"https://{haip}:8123/api/services/input_text/set_value"
@@ -71,7 +100,7 @@ def print_banner():
 
 # Call the banner function before starting main loop
 print_banner()
-print(f"[{ts()}] [WELCOME] Custom DNS Monitor started. Version: 0.1.0", flush=True)
+print(f"[{ts()}] [WELCOME] Custom DNS Monitor started. Version: 0.1.1", flush=True)
 print(f"[{ts()}] ====================================================", flush=True)
 def main_loop():
     options = load_options()
