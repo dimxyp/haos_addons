@@ -1,5 +1,5 @@
 name: MariaDB Backup
-version: "1.9"
+version: "2.0"
 slug: mariadb-backup
 description: Backup MariaDB databases using mysqldump
 startup: once
@@ -16,7 +16,9 @@ options:
   DB_HOST: core-mariadb
   DB_USER: homeassistant
   DB_PASS: yourpassword
+  DB_BACKUPDIR: /backup/location
 schema:
   DB_HOST: str
   DB_USER: str
   DB_PASS: password
+  BACKUPDIR: str
