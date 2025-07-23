@@ -8,9 +8,9 @@ echo "[INFO] Loading configuration..."
 DB_HOST=$(jq --raw-output '.DB_HOST // "core-mariadb"' "$CONFIG_PATH")
 DB_USER=$(jq --raw-output '.DB_USER // "homeassistant"' "$CONFIG_PATH")
 DB_PASS=$(jq --raw-output '.DB_PASS // empty' "$CONFIG_PATH")
+DB_BACKUPDIR=$(jq --raw-output '.DB_BACKUPDIR // "/share/DBbackups"' "$CONFIG_PATH")
 
-OUTPUT_FOLDER="/share/DBbackups"
-mkdir -p "$OUTPUT_FOLDER"
+OUTPUT_FOLDER="$DB_BACKUPDIR"
 
 # Date and time
 TODAY=$(date +"%Y%m%d")
