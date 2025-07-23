@@ -12,20 +12,20 @@ The `run.sh` script:
 
 1. Connects to the running MariaDB container used by Home Assistant.
 2. Runs a `mariadb-dump` of all databases using credentials stored in `/data/secrets.txt`.
-3. Saves the `.sql` backup file to `/share/DBbackups/mariadb_backup_<DATE>.sql`.  # I know this need change to use variable location :P
+3. Saves the `.sql` backup file to custom location.
 
 ---
 
 ## 🔐 Credentials
 
-You must provide database credentials in the add-on configuration:
+You must provide database credentials and backup location in the add-on configuration:
 
 ```json
 {
-  "host": "core-mariadb",   # your HA MariaDB - https://github.com/home-assistant/addons/tree/master/mariadb
-  "port": 3306,
-  "username": "homeassistant",
-  "password": "YOUR_DB_PASSWORD"
+  "DB_HOST": "core-mariadb",   # your HA MariaDB - https://github.com/home-assistant/addons/tree/master/mariadb
+  "DB_USER": "homeassistant",
+  "DB_PASS": "YOUR_DB_PASSWORD",
+  "DB_BACKUPDIR": "/share/... /config/... or any other"
 }
 ```
 
