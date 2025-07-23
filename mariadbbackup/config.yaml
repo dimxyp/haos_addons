@@ -1,5 +1,5 @@
 name: MariaDB Backup
-version: "2.0"
+version: "2.1"
 slug: mariadb-backup
 description: Backup MariaDB databases using mysqldump
 startup: once
@@ -21,4 +21,4 @@ schema:
   DB_HOST: str
   DB_USER: str
   DB_PASS: password
-  BACKUPDIR: str
+  DB_BACKUPDIR: str
