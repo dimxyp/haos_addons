@@ -1,6 +1,8 @@
 # 🎵 YouTube DL Add-on for Home Assistant
 
-This is a lightweight Flask-based add-on for Home Assistant using [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) to:
+## ❗NOTE: The main download/extraction part is already covered by official [media_extractor](https://www.home-assistant.io/integrations/media_extractor)
+
+This is a lightweight Flask-based add-on for Home Assistant using [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) 
 
 - ✅ Download **YouTube videos** as `.mp4`
 - ✅ Download **YouTube audio** as `.mp3`
