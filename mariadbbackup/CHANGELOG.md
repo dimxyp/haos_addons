@@ -1,4 +1,6 @@
 # Changelog
+## 2.2
+- add retention days as var
 ## 2.1
 - readme fixes
 
