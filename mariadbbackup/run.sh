@@ -9,6 +9,7 @@ DB_HOST=$(jq --raw-output '.DB_HOST // "core-mariadb"' "$CONFIG_PATH")
 DB_USER=$(jq --raw-output '.DB_USER // "homeassistant"' "$CONFIG_PATH")
 DB_PASS=$(jq --raw-output '.DB_PASS // empty' "$CONFIG_PATH")
 DB_BACKUPDIR=$(jq --raw-output '.DB_BACKUPDIR // "/share/DBbackups"' "$CONFIG_PATH")
+DB_RETENTION_DAYS=$(jq --raw-output '.DB_RETENTION_DAYS // 60' "$CONFIG_PATH")
 
 OUTPUT_FOLDER="$DB_BACKUPDIR"
 
@@ -61,6 +62,6 @@ done
 
 # Housekeeping: Delete folders older than two months
 echo "$TIMESTP_LOG [INFO] Performing housekeeping to delete folders older than two months..."
-find "$OUTPUT_FOLDER" -type d -mtime +60 -exec rm -rf {} +
+find "$OUTPUT_FOLDER" -type d -mtime +$DB_RETENTION_DAYS -exec rm -rf {} +
 
 echo "$TIMESTP_LOG [INFO] Backup process completed."
