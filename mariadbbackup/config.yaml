@@ -16,7 +16,7 @@ options:
   DB_HOST: core-mariadb
   DB_USER: homeassistant
   DB_PASS: yourpassword
-  DB_BACKUPDIR: /backup/location
+  DB_BACKUPDIR: /share
 schema:
   DB_HOST: str
   DB_USER: str
