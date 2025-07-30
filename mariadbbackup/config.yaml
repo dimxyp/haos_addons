@@ -5,8 +5,11 @@ description: Backup MariaDB databases using mariadb-dump
 startup: once
 boot: manual
 arch:
-  - amd64
+  - armhf
+  - armv7
   - aarch64
+  - amd64
+  - i386
 init: false
 host_network: true
 privileged: []
