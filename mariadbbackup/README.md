@@ -22,10 +22,11 @@ You must provide database credentials and backup location in the add-on configur
 
 ```json
 {
-  "DB_HOST": "core-mariadb",   # your HA MariaDB - https://github.com/home-assistant/addons/tree/master/mariadb
-  "DB_USER": "homeassistant",
-  "DB_PASS": "YOUR_DB_PASSWORD",
+  "DB_HOST": "core-mariadb"   # your HA MariaDB - https://github.com/home-assistant/addons/tree/master/mariadb
+  "DB_USER": "homeassistant"
+  "DB_PASS": "YOUR_DB_PASSWORD"
   "DB_BACKUPDIR": "/share/... /config/... or any other"
+  "DB_RETENTION_DAYS": "days of housekeeping retention"
 }
 ```
 
