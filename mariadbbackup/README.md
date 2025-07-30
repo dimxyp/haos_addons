@@ -20,6 +20,8 @@ The `run.sh` script:
 
 You must provide database credentials and backup location in the add-on configuration:
 
+## ⚙️ Comfiguration 
+
 ```json
 {
   "DB_HOST": "core-mariadb"   # your HA MariaDB - https://github.com/home-assistant/addons/tree/master/mariadb
@@ -32,11 +34,9 @@ You must provide database credentials and backup location in the add-on configur
 
 🚀 Manual Backup
 
-You can trigger a manual backup by restarting the add-on or calling the script from the container:
+You can trigger a manual backup by starting the add-on.
 
-```
-bash /run.sh
-```
+
 📅 Scheduled Backups using HA Automation
 
 
@@ -62,13 +62,14 @@ mode: single
 Backups are saved under:
 
 ```
-/share/DBbackups/mariadb_backup_YYYY-MM-DD_HH-MM-SS.sql
+$DB_BACKUPDIR/mariadb_backup_YYYY-MM-DD_HH-MM-SS.sql
 ```
 
 🛠️ Dependencies
-- mariadb-client
-- bash
 - core-mariadb add-on must be running and accessible
+- creds
+- backup location
+- retention period
 
 
 
