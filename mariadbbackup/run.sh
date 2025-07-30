@@ -8,7 +8,7 @@ echo "[INFO] Loading configuration..."
 DB_HOST=$(jq --raw-output '.DB_HOST // "core-mariadb"' "$CONFIG_PATH")
 DB_USER=$(jq --raw-output '.DB_USER // "homeassistant"' "$CONFIG_PATH")
 DB_PASS=$(jq --raw-output '.DB_PASS // empty' "$CONFIG_PATH")
-DB_BACKUPDIR=$(jq --raw-output '.DB_BACKUPDIR // "/share/DBbackups"' "$CONFIG_PATH")
+DB_BACKUPDIR=$(jq --raw-output '.DB_BACKUPDIR // "/share"' "$CONFIG_PATH")
 DB_RETENTION_DAYS=$(jq --raw-output '.DB_RETENTION_DAYS // 60' "$CONFIG_PATH")
 
 OUTPUT_FOLDER="$DB_BACKUPDIR"
