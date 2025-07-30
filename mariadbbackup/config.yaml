@@ -1,7 +1,7 @@
 name: MariaDB Backup
 version: "2.2"
 slug: mariadb-backup
-description: Backup MariaDB databases using mysqldump
+description: Backup MariaDB databases using mariadb-dump
 startup: once
 boot: manual
 arch:
