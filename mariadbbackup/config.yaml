@@ -6,6 +6,7 @@ startup: once
 boot: manual
 arch:
   - amd64
+  - aarch64
 init: false
 host_network: true
 privileged: []
