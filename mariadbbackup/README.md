@@ -2,7 +2,9 @@
 
 This is a Home Assistant OS-compatible add-on that creates scheduled and manual backups of Home Assistant MariaDB database.
 
-It uses `mariadb-dump` to export the database and stores the result as a timestamped `.sql` file in the `/share` directory.
+It uses `mariadb-dump` to export the database and stores the result as a timestamped `.sql` file in selected directory.
+
+The add-on doesn’t need to stay running or launch at boot. It acts as a boot-triggered task—starts, performs the backup, then stops.
 
 ---
 
