@@ -1,6 +1,10 @@
 # Changelog
+## 2.3
+- add more maps
+
 ## 2.2
 - add retention days as var
+
 ## 2.1
 - readme fixes
 
