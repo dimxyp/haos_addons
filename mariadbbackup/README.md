@@ -18,7 +18,7 @@ The `run.sh` script:
 
 ---
 
-## 🔐 Backup Location
+## 📍 Backup Location
 
 Allowed locations:
 
