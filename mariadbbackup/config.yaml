@@ -1,5 +1,5 @@
 name: MariaDB Backup
-version: "2.2"
+version: "2.3"
 slug: mariadb-backup
 description: Backup MariaDB databases using mariadb-dump
 startup: once
@@ -14,7 +14,13 @@ init: false
 host_network: true
 privileged: []
 map:
+  - addons:rw
+  - all_addon_configs:rw
+  - backup:rw
+  - homeassistant_config:rw
+  - media:rw
   - share:rw
+  - ssl:rw
 options:
   DB_HOST: core-mariadb
   DB_USER: homeassistant
