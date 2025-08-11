@@ -20,7 +20,6 @@ map:
   - homeassistant_config:rw
   - media:rw
   - share:rw
-  - ssl:rw
 options:
   DB_HOST: core-mariadb
   DB_USER: homeassistant

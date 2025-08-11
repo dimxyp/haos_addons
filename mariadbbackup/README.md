@@ -18,6 +18,20 @@ The `run.sh` script:
 
 ---
 
+## 🔐 Backup Location
+
+Allowed locations:
+
+  - addons
+  - all_addon_configs
+  - backup
+  - homeassistant_config
+  - media
+  - share
+  - any network path
+
+---
+
 ## 🔐 Credentials
 
 You must provide database credentials and backup location in the add-on configuration:
