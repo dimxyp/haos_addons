@@ -76,6 +76,7 @@ Starts app.py as REST server
 This add-on uses your Azure credentials from options.json and exposes a command-execution interface. Make sure the add-on network is secure and not exposed to the internet.
 
 📁 File Structure
+
 app.py – Python Flask REST API that handles command execution
 
 Dockerfile – Builds the container
