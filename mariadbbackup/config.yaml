@@ -2,6 +2,7 @@ name: MariaDB Backup
 version: "2.3"
 slug: mariadb-backup
 description: Backup MariaDB databases using mariadb-dump
+url: https://github.com/dimxyp/haos_addons/edit/main/mariadbbackup
 startup: once
 boot: manual
 arch:
