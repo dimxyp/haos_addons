@@ -18,8 +18,7 @@ ALGO=$(bashio::config 'lets_encrypt.algo')
 # FWH=$(bashio::config 'fwh') #FireWall Host
 # FWCO=$(bashio::config 'fwco')  #FireWall Command Open
 # FWCC=$(bashio::config 'fwcc')  #FireWall Command Close
-
-bashio::log.info "FWH=${FWH}, FWCO=${FWCO}, FWCC=${FWCC}"
+#bashio::log.info "FWH=${FWH}, FWCO=${FWCO}, FWCC=${FWCC}"
 
 # Function that performs a renew
 function le_renew() {
