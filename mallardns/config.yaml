@@ -1,5 +1,5 @@
 ---
-version: 0.0.2
+version: 0.0.3
 slug: mallardns
 name: Marllard DNS
 description: >-
@@ -16,6 +16,7 @@ init: false
 #image: homeassistant/{arch}-addon-duckdns
 map:
   - ssl:rw
+  - config:rw
 options:
   domains:
     - null
