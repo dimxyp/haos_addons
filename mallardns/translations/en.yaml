@@ -46,3 +46,11 @@ configuration:
     name: Firewall Command Command Close Port
     description: >-
       Insert your firewall command to close port here. e.g. /ip firewall nat disable XXXX
+  sshkey:
+    name: SSH Key Path
+    description: >-
+      Path to your SSH private key. e.g. /config/.ssh/id_rsa
+  sshparameters:
+    name: SSH Parameters
+    description: >- 
+      Additional SSH parameters. e.g. -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no

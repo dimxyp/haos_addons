@@ -1,5 +1,5 @@
 ---
-version: 0.0.4
+version: 0.0.5
 slug: mallardns
 name: Marllard DNS
 description: >-
@@ -30,6 +30,8 @@ options:
   fwh: null
   fwco: null
   fwcc: null
+  sshkey: /config/.ssh/id_rsa
+  sshparameters: -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no
   seconds: 300
 schema:
   domains:
@@ -47,6 +49,8 @@ schema:
   fwh: str
   fwco: str
   fwcc: str
+  sshkey: str
+  sshparameters: str
   ipv4: str?
   ipv6: str?
 startup: services

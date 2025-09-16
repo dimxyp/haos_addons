@@ -10,6 +10,9 @@ SYS_KEYFILE=$(jq --raw-output '.lets_encrypt.keyfile' $CONFIG_PATH)
 FWH=$(jq --raw-output '.fwh' $CONFIG_PATH)
 FWCO=$(jq --raw-output '.fwco' $CONFIG_PATH)
 FWCC=$(jq --raw-output '.fwcc' $CONFIG_PATH)
+SSHKEY=$(jq --raw-output '.sshkey' $CONFIG_PATH)
+SSHPARAMETERS=$(jq --raw-output '.sshparameters' $CONFIG_PATH)
+
 
 # https://github.com/lukas2511/dehydrated/blob/master/docs/examples/hook.sh
 
@@ -22,9 +25,12 @@ deploy_challenge() {
 
     # 🔓 Open firewall if configured
         if [[ -n "${FWH}" && "${FWH}" != "null" ]]; then
-            echo "Opening firewall on ${FWH}"
-            ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCO}" || true
+            echo ""
+            echo "+ >>>>>> Opening firewall port on ${FWH} <<<<<<"
+            echo ""
+            ssh -i ${SSHKEY} ${SSHPARAMETERS} "${FWH}" "${FWCO}" || true
         fi
+
     # This hook is called once for every domain that needs to be
     # validated, including any alternative names you may have listed.
     #
@@ -64,8 +70,10 @@ clean_challenge() {
 
     # 🔒 Close firewall if configured
     if [[ -n "${FWH}" && "${FWH}" != "null" ]]; then
-        echo "Closing firewall on ${FWH}"
-        ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCC}" || true
+        echo ""
+        echo "+ >>>>>> Closing firewall port on ${FWH} <<<<<<"
+        echo ""
+        ssh -i ${SSHKEY} ${SSHPARAMETERS} "${FWH}" "${FWCC}" || true
     fi
 }
 
