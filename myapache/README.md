@@ -1,7 +1,5 @@
-Home Assistant Community Add-on: Azure CLI
-
+Home Assistant Community Add-on: custom amache, 
 About
 
-Execute AZ CLI commands via HA
+not used
 
-📚 
