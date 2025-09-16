@@ -9,6 +9,6 @@ RUN apk add --no-cache openssl \
   && curl -s -o /usr/bin/dehydrated \
     "https://raw.githubusercontent.com/Xebozone/dehydrated/${DEHYDRATED_VERSION}/dehydrated" \
   && chmod a+x /usr/bin/dehydrated
-
+RUN chmod +x /root/hooks.sh
 # Copy root filesystem 
 COPY rootfs /
