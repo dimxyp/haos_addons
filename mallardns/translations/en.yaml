@@ -38,14 +38,6 @@ configuration:
     name: Firewall Host Command
     description: >-
       Insert your firewall host configuration here. e.g. root@192.168.1.1
-  fwco:
-    name: Firewall Command Command Open Port
-    description: >-
-      Insert your firewall command to open port here. e.g. /ip firewall nat enable XXXX
-  fwcc:
-    name: Firewall Command Command Close Port
-    description: >-
-      Insert your firewall command to close port here. e.g. /ip firewall nat disable XXXX
   sshkey:
     name: SSH Key Path
     description: >-
@@ -54,3 +46,11 @@ configuration:
     name: SSH Parameters
     description: >- 
       Additional SSH parameters. e.g. -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no
+  fwco:
+    name: Firewall Command Command Open Port
+    description: >-
+      Insert your firewall command to open port here. e.g. /ip firewall nat enable XXXX
+  fwcc:
+    name: Firewall Command Command Close Port
+    description: >-
+      Insert your firewall command to close port here. e.g. /ip firewall nat disable XXXX
