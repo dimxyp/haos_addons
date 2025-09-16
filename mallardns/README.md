@@ -9,7 +9,7 @@ All the options etc is based on https://github.com/home-assistant/addons/tree/ma
 
 ## Firewall Part
 
-fwc  -  Firewall Host Command
+fwh  -  Firewall Host Command
 
 Insert your firewall host configuration here. e.g. root@192.168.1.1 
 
