@@ -2,9 +2,31 @@
 
 This add-on would not have been possible without the work of the developers who created the official DuckDNS add-on
 
+All the options etc is based on https://github.com/home-assistant/addons/tree/master/duckdns
+
 Automatically update your Duck DNS IP address with integrated HTTPS support via Let's Encrypt.
 
-![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
+## Firewall Part
+
+    fwc  -  Firewall Host Command
+
+    Insert your firewall host configuration here. e.g. root@192.168.1.1 
+
+    The full command is 
+    ```yaml
+    ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no 
+    ```
+    so the authentication is based on id_rsa for your firewall connectivity.
+
+    fwco - Firewall Command Command Open Port
+    
+    Insert your firewall command to open port here. e.g. /ip firewall nat enable XXXX
+    
+    fwcc - Firewall Command Command Close Port
+    
+    Insert your firewall command to close port here. e.g. /ip firewall nat disable XXXX
+
+
 
 ## About
 
