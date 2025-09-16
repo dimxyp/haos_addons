@@ -12,4 +12,4 @@ RUN apk add --no-cache openssl \
 
 # Copy root filesystem 
 COPY rootfs /
-
+RUN [ -f /root/hooks.sh ] && chmod +x /root/hooks.sh || echo "No hooks.sh found"
