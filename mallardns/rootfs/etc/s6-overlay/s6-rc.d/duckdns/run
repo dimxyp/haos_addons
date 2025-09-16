@@ -55,7 +55,13 @@ function le_renew() {
     done
 	
 	# Do the certificate renewals
+    if [ -z "${FWH}" ] || [ "${FWH}" = "null" ]; then
+    bashio::log.warning "Firewall host not set. Skipping SSH command."
+    else
+    ssh_output=$(ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCO}")
+    bashio::log.info "SSH open output: ${ssh_output}"
     ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCO}" 
+    fi
     sleep 2
 	dehydrated --cron --separate-challenges --algo "${ALGO}" --hook /root/hooks.sh --challenge dns-01 "${domain_args[@]}" --out "${CERT_DIR}" --config "${WORK_DIR}/config" || true
     LE_UPDATE="$(date +%s)"
