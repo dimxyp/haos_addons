@@ -7,6 +7,9 @@ CONFIG_PATH=/data/options.json
 SYS_TOKEN=$(jq --raw-output '.token' $CONFIG_PATH)
 SYS_CERTFILE=$(jq --raw-output '.lets_encrypt.certfile' $CONFIG_PATH)
 SYS_KEYFILE=$(jq --raw-output '.lets_encrypt.keyfile' $CONFIG_PATH)
+FWH=$(jq --raw-output '.fwh' $CONFIG_PATH)
+FWCO=$(jq --raw-output '.fwco' $CONFIG_PATH)
+FWCC=$(jq --raw-output '.fwcc' $CONFIG_PATH)
 
 # https://github.com/lukas2511/dehydrated/blob/master/docs/examples/hook.sh
 
@@ -17,6 +20,11 @@ deploy_challenge() {
 	echo "Processing domain: $DOMAIN"
 	echo ""
 
+    # 🔓 Open firewall if configured
+        if [[ -n "${FWH}" && "${FWH}" != "null" ]]; then
+            echo "Opening firewall on ${FWH}"
+            ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCO}" || true
+        fi
     # This hook is called once for every domain that needs to be
     # validated, including any alternative names you may have listed.
     #
@@ -53,6 +61,12 @@ clean_challenge() {
     # The parameters are the same as for deploy_challenge.
 
 	curl -s "https://www.duckdns.org/update?domains=$ALIAS&token=$SYS_TOKEN&txt=removed&clear=true"
+
+    # 🔒 Close firewall if configured
+    if [[ -n "${FWH}" && "${FWH}" != "null" ]]; then
+        echo "Closing firewall on ${FWH}"
+        ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCC}" || true
+    fi
 }
 
 deploy_cert() {
