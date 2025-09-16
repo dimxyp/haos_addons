@@ -1,7 +1,8 @@
 name: MariaDB Backup
-version: "2.2"
+version: "2.3"
 slug: mariadb-backup
 description: Backup MariaDB databases using mariadb-dump
+url: https://github.com/dimxyp/haos_addons/edit/main/mariadbbackup
 startup: once
 boot: manual
 arch:
@@ -14,6 +15,11 @@ init: false
 host_network: true
 privileged: []
 map:
+  - addons:rw
+  - all_addon_configs:rw
+  - backup:rw
+  - homeassistant_config:rw
+  - media:rw
   - share:rw
 options:
   DB_HOST: core-mariadb
