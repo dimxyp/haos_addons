@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.6
+fix params
+
+## 0.0.5
+add all in vars
+
+## 0.0.4
+change all to hook.sh
+
 ## 0.1.2
 fixes
 
