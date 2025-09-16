@@ -15,6 +15,9 @@ TOKEN=$(bashio::config 'token')
 DOMAINS=$(bashio::config 'domains | join(",")')
 WAIT_TIME=$(bashio::config 'seconds')
 ALGO=$(bashio::config 'lets_encrypt.algo')
+FWH=$(bashio::config 'fwh') #FireWall Host
+FWCO=$(bashio::config 'fwco')  #FireWall Command Open
+FWCC=$(bashio::config 'fwcc')  #FireWall Command Close
 
 # Function that performs a renew
 function le_renew() {
@@ -52,9 +55,13 @@ function le_renew() {
     done
 	
 	# Do the certificate renewals
+    ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCO}" 
+    sleep 2
 	dehydrated --cron --separate-challenges --algo "${ALGO}" --hook /root/hooks.sh --challenge dns-01 "${domain_args[@]}" --out "${CERT_DIR}" --config "${WORK_DIR}/config" || true
-
     LE_UPDATE="$(date +%s)"
+    sleep 5
+    ssh -i /config/.ssh/id_rsa -o 'PubkeyAcceptedKeyTypes +ssh-rsa' -o StrictHostKeyChecking=no "${FWH}" "${FWCC}" 
+
 }
 
 # Register/generate certificate if terms accepted
