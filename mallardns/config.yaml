@@ -4,7 +4,7 @@ slug: mallardns
 name: Marllard DNS
 description: >-
   Smart Free Dynamic DNS (DynDNS or DDNS) service with Let's Encrypt and Firewall support
-url: https://github.com/dimxyp/haos_addons
+url: https://github.com/dimxyp/haos_addons/tree/main/mallardns
 arch:
   - armhf
   - armv7
