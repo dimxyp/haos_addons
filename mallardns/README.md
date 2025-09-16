@@ -1,10 +1,13 @@
-# 🌐 Marllard DNS Add-on for Home Assistant
+# 🌐 Mallard DNS Add-on for Home Assistant
 
-## 📦 Based on official Home Assistant Add-on: DuckDNS .. 🦆 🙏 📦
+> Mallard ducks are remarkably **intelligent** birds, known for their ability to navigate complex social structures, communicate through vocalizations and body language, and even recognize and return to familiar locations
 
-This add-on would not have been possible without the work of the developers who created the official DuckDNS add-on
 
-All the options etc is based on https://github.com/home-assistant/addons/tree/master/duckdns this addon only adds 2 Firewall commands for isolated Home Assistance environments, open NAT/PAT Port before ssl 🔐 renewall 🈹 and close after that.
+## 📦 Based on official Home Assistant Add-on: DuckDNS .. 🦆 🙏 but smarter...
+> [!IMPORTANT]
+> `This add-on would not have been possible without the work of the developers who created the official DuckDNS add-on`
+
+All the options etc is based on https://github.com/home-assistant/addons/tree/master/duckdns this addon only adds 2 Firewall commands for isolated Home Assistance environments, open NAT/PAT Port before SSL renewall and close after that.
 
 
 ## 🧱 Firewall Part
