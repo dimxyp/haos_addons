@@ -1,4 +1,6 @@
-# Home Assistant Add-on: DuckDNS
+# Based on official Home Assistant Add-on: DuckDNS
+
+This add-on would not have been possible without the work of the developers who created the official DuckDNS add-on
 
 Automatically update your Duck DNS IP address with integrated HTTPS support via Let's Encrypt.
 
@@ -8,9 +10,3 @@ Automatically update your Duck DNS IP address with integrated HTTPS support via 
 
 [Duck DNS][duckdns] is a free service that points a DNS (sub-domains of duckdns.org) to an IP of your choice. This add-on includes support for Let’s Encrypt and automatically creates and renews your certificates. You need to sign up for a Duck DNS account before using this add-on.
 
-[aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
-[amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
-[armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
-[armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
-[i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
-[duckdns]: https://www.duckdns.org

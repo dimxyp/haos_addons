@@ -34,3 +34,15 @@ configuration:
       DuckDNS currently cannot auto-detect your IPv6 address. This option
       allows to specify either 'default' or an interface name to use an IPv6
       address of the host, alternatively you can input an address manually.
+  fwc:
+    name: Firewall Host Command
+    description: >-
+      Insert your firewall host configuration here. e.g. root@192.168.1.1
+  fwco:
+    name: Firewall Command Command Open Port
+    description: >-
+      Insert your firewall command to open port here. e.g. /ip firewall nat enable XXXX
+  fwcc:
+    name: Firewall Command Command Close Port
+    description: >-
+      Insert your firewall command to close port here. e.g. /ip firewall nat disable XXXX
