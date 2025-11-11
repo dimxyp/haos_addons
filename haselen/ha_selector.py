@@ -42,5 +42,8 @@ if __name__ == '__main__':
     elif selector == "zenithgas":
         print("Launching check_gas_bill.py ...")
         subprocess.run([sys.executable, "check_gas_bill.py"], check=True)
+    elif selector == "voltonb21":
+        print("Launching check_gas_bill.py ...")
+        subprocess.run([sys.executable, "check_volton_bill.py"], check=True)      
     else:
         print(f"Unrecognized value '{selector}'. Nothing to do.")

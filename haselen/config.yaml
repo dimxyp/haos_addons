@@ -12,14 +12,18 @@ arch:
   - amd64
 host_network: true
 options:
-  username: "your_zenith_username"
-  password: "your_zenith_password"
+  zusername: "your_zenith_username"
+  zpassword: "your_zenith_password"
+  vusername: "your_zenith_username"
+  vpassword: "your_zenith_password"
   haip: "192.168.1.100"  # Home Assistant IP
   token: "YOUR_LONG_LIVED_ACCESS_TOKEN"
   entity_id: "input_text.zenith_power"
 schema:
-  username: str
-  password: password
+  zusername: str
+  zpassword: password
+  vusername: str
+  vpassword: password
   haip: str
   token: str
   entity_id: str?
