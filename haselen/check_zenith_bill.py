@@ -8,7 +8,6 @@ import requests
 import json
 import os
 
-# --- Load Home Assistant add-on options ---
 def load_options():
     options_path = "/data/options.json"
     if not os.path.exists(options_path):
@@ -37,14 +36,15 @@ def update_input_text(entity_id, value, token, haip):
         "entity_id": entity_id,
         "value": value
     }
+
     try:
-        r = requests.post(url, headers=headers, json=payload, timeout=10)
-        r.raise_for_status()
-        print(f"Updated {entity_id} to: {value}, HA response:", r.text)
-        return True
-    except Exception as e:
-        print("Failed to update Home Assistant input_text:", e)
-        return False
+        response = requests.post(url, headers=headers, json=payload, verify=False)
+        if response.status_code == 200:
+            print(f"Updated {entity_id} to: {value}")
+        else:
+            print(f"Failed to update {entity_id}: {response.status_code} - {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"API request failed: {e}")
 
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--headless")
