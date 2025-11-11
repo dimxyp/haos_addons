@@ -27,4 +27,4 @@ WORKDIR /opt/selenium
 COPY *.py /opt/selenium/
 
 # Run the main script in unbuffered mode for correct logging
-CMD ["python3", "-u", "/opt/selenium/check_zenith_bill.py"]
+CMD ["python3", "-u", "ha_selector.py"]
