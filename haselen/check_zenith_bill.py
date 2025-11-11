@@ -28,7 +28,7 @@ haip = opts["haip"]
 token = opts["token"]
 
 def update_input_text(entity_id, value, token, haip):
-    url = f"http://{haip}:8123/api/services/input_text/set_value"
+    url = f"https://{haip}:8123/api/services/input_text/set_value"
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json"
