@@ -1,0 +1,1 @@
+print("Outstanding Gas Amount: 100")
