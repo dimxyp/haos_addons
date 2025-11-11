@@ -14,14 +14,14 @@ def load_options():
         raise FileNotFoundError(f"Options file '{options_path}' not found! This must be run as a Home Assistant add-on.")
     with open(options_path, "r") as f:
         opts = json.load(f)
-    for key in ("username", "password", "haip", "token"):
+    for key in ("zusername", "zpassword", "haip", "token"):
         if key not in opts:
             raise ValueError(f"Missing '{key}' in options!")
     return opts
 
 opts = load_options()
-username = opts["username"]
-password = opts["password"]
+username = opts["zusername"]
+password = opts["zpassword"]
 entity_id = opts.get("entity_id", "input_text.zenith_power")
 haip = opts["haip"]
 token = opts["token"]

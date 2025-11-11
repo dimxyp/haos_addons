@@ -1,0 +1,8 @@
+---
+configuration:
+  domains:
+    name: Domains
+    description: >-
+      A list of DuckDNS subdomains registered under your account. An acceptable
+      naming convention is `my-domain.duckdns.org`.
+    options:
