@@ -1,0 +1,20 @@
+name: "HaSelenium"
+version: "0.1"
+slug: haselen
+description: "Selenium automation for Home Assistant"
+url: https://github.com/dimxyp/haos_addons/tree/main/haselen
+panel_icon: mdi:spider-web
+startup: services
+boot: auto
+init: false
+ingress: false
+arch:
+  - amd64
+host_network: true
+options:
+  username: null
+  password: null
+schema:
+  username: str
+  password: password
+
