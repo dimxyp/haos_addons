@@ -1,6 +1,6 @@
 FROM homeassistant/amd64-base:latest
 
-# Install Python3, pip, Chrome/Chromedriver, and necessary runtime deps
+# Install Python3, pip, Chromium/Chromedriver, and required dependencies
 RUN apk add --no-cache \
     python3 \
     py3-pip \
@@ -15,13 +15,16 @@ RUN apk add --no-cache \
     mesa-dri-gallium \
     mesa-gbm \
     libstdc++ \
-    ffmpeg && \
-    pip3 install --no-cache-dir selenium webdriver-manager requests
+    ffmpeg \
+    && pip3 install --no-cache-dir selenium webdriver-manager requests
 
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 ENV CHROME_BIN=/usr/bin/chromium-browser
 
-# Copy all .py files in the context to your working directory
+WORKDIR /opt/selenium
+
+# Copy all Python scripts; add more as needed in this folder
 COPY *.py /opt/selenium/
 
-WORKDIR /opt/selenium
+# Always use unbuffered mode (-u) for Python output (for reliable logs)
+CMD ["python3", "-u", "/opt/selenium/check_zenith_bill.py"]
