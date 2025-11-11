@@ -1,11 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
 import json
 
 CONFIG_PATH = '/data/options.json'  # Home Assistant Addon path for user config
@@ -21,7 +19,7 @@ chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-service = Service(ChromeDriverManager().install())
+service = Service('/usr/bin/chromedriver')
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 try:
@@ -48,7 +46,7 @@ try:
     # Click login button (greek: 'Σύνδεση')
     driver.find_element(By.XPATH, "//button[@type='submit' and span[text()='Σύνδεση']]").click()
 
-    # Wait (up to 20s) for login to succeed, either by URL or the BILLS link present, or a user dashboard element
+    # Wait for login redirect
     try:
         WebDriverWait(driver, 20).until(
             EC.any_of(
@@ -61,14 +59,14 @@ try:
         driver.quit()
         exit(1)
 
-    time.sleep(2) # Give the page a second to settle from AJAX/animations etc
-
     # Go to electricity bills page
     driver.get("https://myzenith.zenith.gr/bills/Electricity")
 
     # Wait for the value block to appear
     WebDriverWait(driver, 15).until(
-        EC.presence_of_element_located((By.XPATH, "//div[contains(@class, 'is-flex') and .//span[contains(text(),'Συνολικό Ποσό Οφειλής')]]/h4"))
+        EC.presence_of_element_located(
+            (By.XPATH, "//div[contains(@class, 'is-flex') and .//span[contains(text(),'Συνολικό Ποσό Οφειλής')]]/h4")
+        )
     )
 
     value_elem = driver.find_element(
