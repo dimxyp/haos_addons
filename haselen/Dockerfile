@@ -16,7 +16,7 @@ RUN apk add --no-cache \
     mesa-gbm \
     libstdc++ \
     ffmpeg \
-    && pip3 install --no-cache-dir selenium webdriver-manager requests
+ && pip3 install --no-cache-dir selenium requests
 
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 ENV CHROME_BIN=/usr/bin/chromium-browser
@@ -26,5 +26,5 @@ WORKDIR /opt/selenium
 # Copy all Python scripts; add more as needed in this folder
 COPY *.py /opt/selenium/
 
-# Always use unbuffered mode (-u) for Python output (for reliable logs)
+# Run the main script in unbuffered mode for correct logging
 CMD ["python3", "-u", "/opt/selenium/check_zenith_bill.py"]
