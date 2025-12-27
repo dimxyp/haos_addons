@@ -1,5 +1,5 @@
 name: "HaSelenium"
-version: "0.2.1"
+version: "0.2.2"
 slug: haselen
 description: "Selenium automation for Home Assistant"
 url: https://github.com/dimxyp/haos_addons/tree/main/haselen
