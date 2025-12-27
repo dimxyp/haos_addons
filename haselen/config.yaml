@@ -1,5 +1,5 @@
 name: "HaSelenium"
-version: "0.2.5"
+version: "0.2.6"
 slug: haselen
 description: "Selenium automation for Home Assistant"
 url: https://github.com/dimxyp/haos_addons/tree/main/haselen
@@ -18,7 +18,6 @@ options:
   vpassword: "your_zenith_password"
   haip: "192.168.1.100"  # Home Assistant IP
   token: "YOUR_LONG_LIVED_ACCESS_TOKEN"
-  entity_id: ""
 schema:
   zusername: str
   zpassword: password
@@ -26,5 +25,4 @@ schema:
   vpassword: password
   haip: str
   token: str
-  entity_id: str?
 
