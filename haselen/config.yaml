@@ -18,7 +18,7 @@ options:
   vpassword: "your_zenith_password"
   haip: "192.168.1.100"  # Home Assistant IP
   token: "YOUR_LONG_LIVED_ACCESS_TOKEN"
-  entity_id: "input_text.zenith_power"
+  entity_id: ""
 schema:
   zusername: str
   zpassword: password
