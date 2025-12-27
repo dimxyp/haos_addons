@@ -22,7 +22,7 @@ def load_options():
 opts = load_options()
 username = opts["zusername"]
 password = opts["zpassword"]
-entity_id = opts.get("entity_id", "input_text.zenith_power")
+entity_id = opts.get("entity_id", "input_text.zenith_gas")
 haip = opts["haip"]
 token = opts["token"]
 
