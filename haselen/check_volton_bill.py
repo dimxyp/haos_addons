@@ -14,8 +14,9 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 OPTIONS_PATH = "/data/options.json"
-DEBUG_HTML_PATH = "/tmp/page_debug_volton.html"
-DEBUG_SCREENSHOT_PATH = "/tmp/page_debug_volton.png"
+DEBUG_DIR = "/data/volton_debug"
+DEBUG_HTML_PATH = os.path.join(DEBUG_DIR, "page_debug_volton.html")
+DEBUG_SCREENSHOT_PATH = os.path.join(DEBUG_DIR, "page_debug_volton.png")
 
 
 def load_options():
@@ -28,6 +29,8 @@ def load_options():
     for key in ("vusername", "vpassword", "haip", "token"):
         if key not in opts:
             raise ValueError(f"Missing '{key}' in options!")
+    # optional
+    opts.setdefault("debug_sleep_seconds", 0)  # e.g. 600 to keep container alive for 10 min on failure
     return opts
 
 
@@ -45,13 +48,24 @@ def update_input_text(entity_id, value, token, haip):
         print(f"API request failed: {e}")
 
 
-def dump_debug(driver, reason):
+def ensure_debug_dir():
     try:
+        os.makedirs(DEBUG_DIR, exist_ok=True)
+    except Exception as e:
+        print(f"[DEBUG] Could not create debug dir {DEBUG_DIR}: {e}")
+
+
+def dump_debug(driver, reason):
+    ensure_debug_dir()
+
+    try:
+        html = driver.page_source or ""
         with open(DEBUG_HTML_PATH, "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
+            f.write(html)
         print(f"[DEBUG] wrote HTML to {DEBUG_HTML_PATH} ({reason})")
     except Exception as e:
         print(f"[DEBUG] failed to write HTML: {e}")
+        html = ""
 
     try:
         driver.save_screenshot(DEBUG_SCREENSHOT_PATH)
@@ -68,21 +82,32 @@ def dump_debug(driver, reason):
     except Exception:
         pass
 
+    # Helpful log hints even without opening the HTML file
+    if html:
+        lowered = html.lower()
+        for needle in ("captcha", "recaptcha", "two-factor", "2fa", "otp", "verification", "access denied", "error"):
+            if needle in lowered:
+                print(f"[DEBUG] page_source contains '{needle}' -> likely login challenge/block")
+        # Print a small snippet around "password" if present
+        idx = lowered.find("password")
+        if idx != -1:
+            start = max(0, idx - 500)
+            end = min(len(html), idx + 500)
+            snippet = html[start:end]
+            snippet = snippet.replace("\n", " ")[:1000]
+            print("[DEBUG] snippet around 'password':", snippet)
+
 
 def normalize_amount(raw_text):
     if raw_text is None:
         return None
-    raw_text = raw_text.replace("\u00a0", " ").strip()  # NBSP -> space
+    raw_text = raw_text.replace("\u00a0", " ").strip()
     m = re.search(r"([0-9]+[.,][0-9]{2})", raw_text)
     return m.group(1) if m else raw_text
 
 
-def wait_for_amount_text(driver, timeout=70):
-    """
-    Wait until a <span part="formatted-rich-text"> appears with textContent containing '€'.
-    This matches the exact HTML you pasted.
-    Returns the raw text (e.g. '73.02€').
-    """
+def wait_for_amount_text(driver, timeout=80):
+    # Wait until a formatted-rich-text span appears containing €
     def _has_amount(d):
         spans = d.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
         for sp in spans:
@@ -98,12 +123,31 @@ def wait_for_amount_text(driver, timeout=70):
     return WebDriverWait(driver, timeout).until(_has_amount)
 
 
+def click_first_matching_button(driver, texts):
+    """
+    Try to click the first enabled button whose visible text matches one of 'texts' (case-insensitive).
+    Returns True if clicked.
+    """
+    targets = {t.strip().lower() for t in texts}
+    buttons = driver.find_elements(By.XPATH, "//button[not(@disabled)]")
+    for b in buttons:
+        t = (b.text or "").strip().lower()
+        if t in targets:
+            try:
+                b.click()
+                return True
+            except WebDriverException:
+                continue
+    return False
+
+
 def main():
     opts = load_options()
     username = opts["vusername"]
     password = opts["vpassword"]
     haip = opts["haip"]
     token = opts["token"]
+    debug_sleep_seconds = int(opts.get("debug_sleep_seconds", 0))
 
     entity_id = "input_text.volton_b21"
 
@@ -111,6 +155,8 @@ def main():
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
+    # Sometimes helps with SPA rendering in headless:
+    chrome_options.add_argument("--window-size=1920,1080")
 
     service = Service("/usr/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -120,15 +166,13 @@ def main():
 
         # Username
         WebDriverWait(driver, 25).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "input.inputField[placeholder='Κινητό ή email']")
-            )
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input.inputField[placeholder='Κινητό ή email']"))
         )
         user_elem = driver.find_element(By.CSS_SELECTOR, "input.inputField[placeholder='Κινητό ή email']")
         user_elem.clear()
         user_elem.send_keys(username)
 
-        # Continue button
+        # Continue
         WebDriverWait(driver, 25).until(
             EC.element_to_be_clickable(
                 (By.XPATH, "//button[contains(@class, 'my-custom-button') and not(@disabled)]")
@@ -138,30 +182,17 @@ def main():
 
         # Password
         WebDriverWait(driver, 25).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']")
-            )
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']"))
         )
         pw_elem = driver.find_element(By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']")
         pw_elem.clear()
         pw_elem.send_keys(password)
 
-        # Prefer clicking a visible enabled button if there is one; fallback to Enter.
-        buttons = driver.find_elements(By.XPATH, "//button[not(@disabled)]")
-        clicked = False
-        for b in buttons:
-            t = (b.text or "").strip().lower()
-            if t in ("είσοδος", "σύνδεση", "login", "sign in", "submit", "συνέχεια"):
-                try:
-                    b.click()
-                    clicked = True
-                    break
-                except WebDriverException:
-                    pass
+        # Submit (try button labels first, then Enter)
+        clicked = click_first_matching_button(driver, ["Είσοδος", "Σύνδεση", "Login", "Sign in", "Submit", "Συνέχεια"])
         if not clicked:
             pw_elem.send_keys(Keys.ENTER)
 
-        # Let SPA render
         time.sleep(2)
         print("[DEBUG] after submit current_url:", driver.current_url)
         print("[DEBUG] after submit title:", driver.title)
@@ -177,7 +208,14 @@ def main():
     except (TimeoutException, NoSuchElementException) as e:
         dump_debug(driver, f"selenium-error: {e.__class__.__name__}")
         print("Failed to find outstanding amount:", str(e))
-        print(f"Check {DEBUG_HTML_PATH} for page source")
+        print(f"Debug files saved to: {DEBUG_DIR}")
+        print(f" - {DEBUG_HTML_PATH}")
+        print(f" - {DEBUG_SCREENSHOT_PATH}")
+
+        if debug_sleep_seconds > 0:
+            print(f"[DEBUG] sleeping for {debug_sleep_seconds}s so you can fetch debug files...")
+            time.sleep(debug_sleep_seconds)
+
     finally:
         driver.quit()
 
