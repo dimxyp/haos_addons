@@ -14,7 +14,9 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 OPTIONS_PATH = "/data/options.json"
-DEBUG_DIR = "/data/volton_debug"
+
+# Persist debug artifacts in Home Assistant /share
+DEBUG_DIR = "/share/volton_debug"
 DEBUG_HTML_PATH = os.path.join(DEBUG_DIR, "page_debug_volton.html")
 DEBUG_SCREENSHOT_PATH = os.path.join(DEBUG_DIR, "page_debug_volton.png")
 
@@ -29,8 +31,8 @@ def load_options():
     for key in ("vusername", "vpassword", "haip", "token"):
         if key not in opts:
             raise ValueError(f"Missing '{key}' in options!")
-    # optional
-    opts.setdefault("debug_sleep_seconds", 0)  # e.g. 600 to keep container alive for 10 min on failure
+    # optional: keep container alive after failure so you can inspect files/logs
+    opts.setdefault("debug_sleep_seconds", 0)  # e.g. 600
     return opts
 
 
@@ -49,15 +51,13 @@ def update_input_text(entity_id, value, token, haip):
 
 
 def ensure_debug_dir():
-    try:
-        os.makedirs(DEBUG_DIR, exist_ok=True)
-    except Exception as e:
-        print(f"[DEBUG] Could not create debug dir {DEBUG_DIR}: {e}")
+    os.makedirs(DEBUG_DIR, exist_ok=True)
 
 
 def dump_debug(driver, reason):
     ensure_debug_dir()
 
+    html = ""
     try:
         html = driver.page_source or ""
         with open(DEBUG_HTML_PATH, "w", encoding="utf-8") as f:
@@ -65,7 +65,6 @@ def dump_debug(driver, reason):
         print(f"[DEBUG] wrote HTML to {DEBUG_HTML_PATH} ({reason})")
     except Exception as e:
         print(f"[DEBUG] failed to write HTML: {e}")
-        html = ""
 
     try:
         driver.save_screenshot(DEBUG_SCREENSHOT_PATH)
@@ -75,27 +74,16 @@ def dump_debug(driver, reason):
 
     try:
         print("[DEBUG] current_url:", driver.current_url)
-    except Exception:
-        pass
-    try:
         print("[DEBUG] title:", driver.title)
     except Exception:
         pass
 
-    # Helpful log hints even without opening the HTML file
+    # Quick hints in logs
     if html:
         lowered = html.lower()
         for needle in ("captcha", "recaptcha", "two-factor", "2fa", "otp", "verification", "access denied", "error"):
             if needle in lowered:
                 print(f"[DEBUG] page_source contains '{needle}' -> likely login challenge/block")
-        # Print a small snippet around "password" if present
-        idx = lowered.find("password")
-        if idx != -1:
-            start = max(0, idx - 500)
-            end = min(len(html), idx + 500)
-            snippet = html[start:end]
-            snippet = snippet.replace("\n", " ")[:1000]
-            print("[DEBUG] snippet around 'password':", snippet)
 
 
 def normalize_amount(raw_text):
@@ -124,10 +112,6 @@ def wait_for_amount_text(driver, timeout=80):
 
 
 def click_first_matching_button(driver, texts):
-    """
-    Try to click the first enabled button whose visible text matches one of 'texts' (case-insensitive).
-    Returns True if clicked.
-    """
     targets = {t.strip().lower() for t in texts}
     buttons = driver.find_elements(By.XPATH, "//button[not(@disabled)]")
     for b in buttons:
@@ -155,7 +139,6 @@ def main():
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    # Sometimes helps with SPA rendering in headless:
     chrome_options.add_argument("--window-size=1920,1080")
 
     service = Service("/usr/bin/chromedriver")
