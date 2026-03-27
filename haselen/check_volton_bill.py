@@ -7,6 +7,7 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -24,7 +25,6 @@ def load_options():
         )
     with open(OPTIONS_PATH, "r") as f:
         opts = json.load(f)
-
     for key in ("vusername", "vpassword", "haip", "token"):
         if key not in opts:
             raise ValueError(f"Missing '{key}' in options!")
@@ -35,9 +35,7 @@ def update_input_text(entity_id, value, token, haip):
     url = f"https://{haip}:8123/api/services/input_text/set_value"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = {"entity_id": entity_id, "value": value}
-
     try:
-        # NOTE: verify=False because many HA installs use self-signed certs.
         response = requests.post(url, headers=headers, json=payload, verify=False, timeout=20)
         if response.status_code == 200:
             print(f"Updated {entity_id} to: {value}")
@@ -71,80 +69,33 @@ def dump_debug(driver, reason):
         pass
 
 
-def get_text_content(driver, el):
-    """Return visible text; if empty, return textContent (more reliable for LWC)."""
-    txt = (el.text or "").strip()
-    if txt:
-        return txt
-    try:
-        txt = (driver.execute_script("return arguments[0].textContent;", el) or "").strip()
-    except WebDriverException:
-        txt = ""
-    return txt
-
-
-def find_amount_text_in_current_context(driver):
-    """
-    Look for spans like:
-      <span part="formatted-rich-text"><div> 73.02€ </div></span>
-    Return the first text that contains '€'.
-    """
-    candidates = driver.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
-    for el in candidates:
-        t = get_text_content(driver, el)
-        if "€" in t:
-            return t
-    return None
-
-
-def find_amount_text(driver, timeout=60):
-    """
-    Robust amount extraction:
-      1) Wait for any 'formatted-rich-text' spans to appear.
-      2) Search in main document for one containing €.
-      3) If not found, sweep iframes and search there.
-    Returns raw text like '73.02€' (may contain spaces/non-breaking spaces).
-    """
-    wait = WebDriverWait(driver, timeout)
-
-    # Wait until at least one candidate exists somewhere in the main document.
-    # (Even if the real value appears later, this reduces flakiness.)
-    wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")) > 0)
-
-    # Try main document first
-    txt = find_amount_text_in_current_context(driver)
-    if txt:
-        return txt
-
-    # If not found, try iframes (common cause of element-not-found)
-    iframes = driver.find_elements(By.TAG_NAME, "iframe")
-    if iframes:
-        print(f"[DEBUG] found {len(iframes)} iframe(s), scanning...")
-    for idx, frame in enumerate(iframes):
-        try:
-            driver.switch_to.default_content()
-            driver.switch_to.frame(frame)
-            txt = find_amount_text_in_current_context(driver)
-            if txt:
-                print(f"[DEBUG] amount found in iframe index {idx}")
-                driver.switch_to.default_content()
-                return txt
-        except WebDriverException:
-            continue
-
-    driver.switch_to.default_content()
-    return None
-
-
 def normalize_amount(raw_text):
-    """
-    Extract number like 96.24 or 96,24 from raw text.
-    """
     if raw_text is None:
         return None
-    raw_text = raw_text.replace("\u00a0", " ").strip()  # convert NBSP to normal spaces
+    raw_text = raw_text.replace("\u00a0", " ").strip()  # NBSP -> space
     m = re.search(r"([0-9]+[.,][0-9]{2})", raw_text)
     return m.group(1) if m else raw_text
+
+
+def wait_for_amount_text(driver, timeout=70):
+    """
+    Wait until a <span part="formatted-rich-text"> appears with textContent containing '€'.
+    This matches the exact HTML you pasted.
+    Returns the raw text (e.g. '73.02€').
+    """
+    def _has_amount(d):
+        spans = d.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
+        for sp in spans:
+            try:
+                txt = d.execute_script("return arguments[0].textContent;", sp)
+            except WebDriverException:
+                txt = sp.text
+            txt = (txt or "").replace("\u00a0", " ").strip()
+            if "€" in txt:
+                return txt
+        return False
+
+    return WebDriverWait(driver, timeout).until(_has_amount)
 
 
 def main():
@@ -154,7 +105,6 @@ def main():
     haip = opts["haip"]
     token = opts["token"]
 
-    # If you want this to be configurable via options.json, tell me and I’ll adjust.
     entity_id = "input_text.volton_b21"
 
     chrome_options = webdriver.ChromeOptions()
@@ -166,7 +116,7 @@ def main():
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
     try:
-        driver.get("https://myon.volton.gr/s/login/")
+        driver.get("https://myon.volton.gr/s/login/?language=el")
 
         # Username
         WebDriverWait(driver, 25).until(
@@ -178,7 +128,7 @@ def main():
         user_elem.clear()
         user_elem.send_keys(username)
 
-        # Continue
+        # Continue button
         WebDriverWait(driver, 25).until(
             EC.element_to_be_clickable(
                 (By.XPATH, "//button[contains(@class, 'my-custom-button') and not(@disabled)]")
@@ -195,18 +145,28 @@ def main():
         pw_elem = driver.find_element(By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']")
         pw_elem.clear()
         pw_elem.send_keys(password)
-        pw_elem.submit()
 
-        # Give the portal a moment to redirect/render after submit
+        # Prefer clicking a visible enabled button if there is one; fallback to Enter.
+        buttons = driver.find_elements(By.XPATH, "//button[not(@disabled)]")
+        clicked = False
+        for b in buttons:
+            t = (b.text or "").strip().lower()
+            if t in ("είσοδος", "σύνδεση", "login", "sign in", "submit", "συνέχεια"):
+                try:
+                    b.click()
+                    clicked = True
+                    break
+                except WebDriverException:
+                    pass
+        if not clicked:
+            pw_elem.send_keys(Keys.ENTER)
+
+        # Let SPA render
         time.sleep(2)
         print("[DEBUG] after submit current_url:", driver.current_url)
         print("[DEBUG] after submit title:", driver.title)
 
-        raw_text = find_amount_text(driver, timeout=70)
-        if not raw_text:
-            dump_debug(driver, "amount-not-found")
-            raise TimeoutException("Amount element not found (no formatted-rich-text containing €).")
-
+        raw_text = wait_for_amount_text(driver, timeout=80)
         print("Raw amount field:", repr(raw_text))
 
         amount = normalize_amount(raw_text)
