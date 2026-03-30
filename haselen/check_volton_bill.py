@@ -69,7 +69,6 @@ def create_driver():
 
 
 def find_username_input(driver):
-    # Δουλεύει ήδη στα logs σου αυτός ο selector
     wait = WebDriverWait(driver, 20)
     return wait.until(EC.presence_of_element_located((By.XPATH, "//input[@type='text']")))
 
@@ -135,24 +134,40 @@ def do_login(driver, username, password):
     login_btn.click()
     print("Clicked 'Σύνδεση'")
 
-    # Δίνουμε χρόνο να φορτώσει το dashboard
-    time.sleep(8)
+    # Μεγάλο delay + προσπάθεια να περιμένουμε να τελειώσει το loading
+    # Πρώτα ένα σκληρό sleep για να φορτώσουν τα Aura scripts
+    time.sleep(15)
+
+    # Optionally: αν υπάρχει γνωστό loader, μπορούμε να περιμένουμε να εξαφανιστεί
+    try:
+        # Παράδειγμα: div με class "slds-spinner" ή κάτι παρόμοιο
+        WebDriverWait(driver, 30).until_not(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".slds-spinner"))
+        )
+        print("[DEBUG] Spinner disappeared")
+    except Exception:
+        # Αν δεν βρούμε spinner, συνεχίζουμε κανονικά
+        print("[DEBUG] Spinner not found or still visible, continuing anyway")
+
     print("After submit URL:", driver.current_url)
     debug_dump(driver, DEBUG_HTML_AFTER, DEBUG_PNG_AFTER, "after_login")
 
 
-def wait_for_amount_text(driver, timeout=80):
+def wait_for_amount_text(driver, timeout=120):
     """
     Βρίσκει span[part='formatted-rich-text'] που περιέχει € και
     επιστρέφει το κείμενο (π.χ. ' 73.02€ ').
+    Επιπλέον, στο poll τυπώνει πόσα spans βρίσκει για debug.
     """
 
     def _has_amount(drv):
         spans = drv.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
+        print(f"[DEBUG] formatted-rich-text spans found: {len(spans)}")
         for sp in spans:
             txt = sp.text or ""
             txt = txt.replace("\u00a0", " ").strip()
             if "€" in txt:
+                print(f"[DEBUG] Candidate amount text: {repr(txt)}")
                 return txt
         return False
 
@@ -205,7 +220,7 @@ def main():
         do_login(driver, opts["vusername"], opts["vpassword"])
 
         print("Waiting for amount text ...")
-        raw = wait_for_amount_text(driver, timeout=80)
+        raw = wait_for_amount_text(driver, timeout=120)
         print("Raw amount text:", repr(raw))
 
         amount = normalize_amount(raw)
