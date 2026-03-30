@@ -15,7 +15,6 @@ from selenium.webdriver.support import expected_conditions as EC
 
 OPTIONS_PATH = "/data/options.json"
 
-# Persist debug artifacts in Home Assistant /share (Samba Share exposes this)
 DEBUG_DIR = "/share/volton_debug"
 DEBUG_HTML_PATH = os.path.join(DEBUG_DIR, "page_debug_volton.html")
 DEBUG_SCREENSHOT_PATH = os.path.join(DEBUG_DIR, "page_debug_volton.png")
@@ -24,9 +23,7 @@ DEBUG_PROBE_PATH = os.path.join(DEBUG_DIR, "_probe.txt")
 
 def load_options():
     if not os.path.exists(OPTIONS_PATH):
-        raise FileNotFoundError(
-            f"Options file '{OPTIONS_PATH}' not found! This must be run as a Home Assistant add-on."
-        )
+        raise FileNotFoundError(f"Options file '{OPTIONS_PATH}' not found!")
     with open(OPTIONS_PATH, "r", encoding="utf-8") as f:
         opts = json.load(f)
 
@@ -34,11 +31,7 @@ def load_options():
         if key not in opts:
             raise ValueError(f"Missing '{key}' in options!")
 
-    # Optional: keep container alive after failure so you can fetch debug files
-    # Add to options.json if you want: "debug_sleep_seconds": 600
-    if "debug_sleep_seconds" not in opts:
-        opts["debug_sleep_seconds"] = 0
-
+    opts.setdefault("debug_sleep_seconds", 0)
     return opts
 
 
@@ -47,10 +40,6 @@ def ensure_debug_dir():
 
 
 def debug_probe_share():
-    """
-    Prove (in logs) whether /share is mounted and writable inside the add-on container.
-    Also writes /share/volton_debug/_probe.txt so you can confirm in Samba.
-    """
     print("[DEBUG] /share exists:", os.path.exists("/share"))
     try:
         print("[DEBUG] /share listing:", os.listdir("/share"))
@@ -87,29 +76,22 @@ def dump_debug(driver, reason):
 
     try:
         print("[DEBUG] current_url:", driver.current_url)
-    except Exception:
-        pass
-    try:
         print("[DEBUG] title:", driver.title)
     except Exception:
         pass
 
-    # Log hints for challenges even without opening the HTML
     if html:
         lowered = html.lower()
-        needles = ("captcha", "recaptcha", "two-factor", "2fa", "otp", "verification", "access denied", "error")
-        for n in needles:
+        for n in ("captcha", "recaptcha", "two-factor", "2fa", "otp", "verification", "access denied", "error"):
             if n in lowered:
-                print(f"[DEBUG] page_source contains '{n}' -> likely login challenge/block")
+                print(f"[DEBUG] page_source contains '{n}'")
 
 
 def update_input_text(entity_id, value, token, haip):
     url = f"https://{haip}:8123/api/services/input_text/set_value"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = {"entity_id": entity_id, "value": value}
-
     try:
-        # verify=False because many HA installs use self-signed certs
         response = requests.post(url, headers=headers, json=payload, verify=False, timeout=20)
         if response.status_code == 200:
             print(f"Updated {entity_id} to: {value}")
@@ -120,9 +102,6 @@ def update_input_text(entity_id, value, token, haip):
 
 
 def normalize_amount(raw_text):
-    """
-    Extract number like 96.24 or 96,24 from raw text (which may include NBSP and €)
-    """
     if raw_text is None:
         return None
     raw_text = raw_text.replace("\u00a0", " ").strip()
@@ -131,12 +110,6 @@ def normalize_amount(raw_text):
 
 
 def wait_for_amount_text(driver, timeout=80):
-    """
-    Wait until a <span part="formatted-rich-text"> appears with textContent containing '€'.
-    This matches the HTML you pasted:
-      <span part="formatted-rich-text"><div>&nbsp;73.02€&nbsp;</div></span>
-    """
-
     def _has_amount(d):
         spans = d.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
         for sp in spans:
@@ -152,18 +125,39 @@ def wait_for_amount_text(driver, timeout=80):
     return WebDriverWait(driver, timeout).until(_has_amount)
 
 
-def click_first_matching_button(driver, texts):
-    """
-    Try to click the first enabled button whose visible text matches one of 'texts' (case-insensitive).
-    """
-    targets = {t.strip().lower() for t in texts}
-    buttons = driver.find_elements(By.XPATH, "//button[not(@disabled)]")
-    for b in buttons:
-        t = (b.text or "").strip().lower()
-        if t in targets:
+def type_like_human(elem, text, delay=0.05):
+    elem.click()
+    elem.clear()
+    for ch in text:
+        elem.send_keys(ch)
+        time.sleep(delay)
+
+
+def force_input_events(driver, elem):
+    # Dispatch input/change events so reactive frameworks update button enabled state
+    driver.execute_script(
+        """
+        const el = arguments[0];
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+        """,
+        elem,
+    )
+
+
+def click_continue(driver):
+    # Your existing selector, but we try a couple of safe variants
+    xpaths = [
+        "//button[contains(@class, 'my-custom-button') and not(@disabled)]",
+        "//button[contains(@class, 'my-custom-button')]",
+    ]
+    for xp in xpaths:
+        btns = driver.find_elements(By.XPATH, xp)
+        for b in btns:
             try:
-                b.click()
-                return True
+                if b.is_enabled():
+                    b.click()
+                    return True
             except WebDriverException:
                 continue
     return False
@@ -177,10 +171,8 @@ def main():
     token = opts["token"]
     debug_sleep_seconds = int(opts.get("debug_sleep_seconds", 0))
 
-    # Your HA entity
     entity_id = "input_text.volton_b21"
 
-    # Verify /share is mounted + write a probe file every run
     debug_probe_share()
 
     chrome_options = webdriver.ChromeOptions()
@@ -195,34 +187,45 @@ def main():
     try:
         driver.get("https://myon.volton.gr/s/login/?language=el")
 
-        # Username
-        WebDriverWait(driver, 25).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input.inputField[placeholder='Κινητό ή email']"))
+        # USERNAME: wait clickable (not just present)
+        user_css = "input.inputField[placeholder='Κινητό ή email']"
+        user_elem = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, user_css))
         )
-        user_elem = driver.find_element(By.CSS_SELECTOR, "input.inputField[placeholder='Κινητό ή email']")
-        user_elem.clear()
-        user_elem.send_keys(username)
 
-        # Continue
-        WebDriverWait(driver, 25).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, "//button[contains(@class, 'my-custom-button') and not(@disabled)]")
+        # Type slowly + force events (important!)
+        type_like_human(user_elem, username, delay=0.04)
+        force_input_events(driver, user_elem)
+
+        # Wait a bit for JS to enable the button
+        time.sleep(0.5)
+
+        # Continue button: wait clickable then click
+        try:
+            WebDriverWait(driver, 15).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//button[contains(@class, 'my-custom-button') and not(@disabled)]")
+                )
             )
-        )
-        driver.find_element(By.XPATH, "//button[contains(@class, 'my-custom-button') and not(@disabled)]").click()
+        except TimeoutException:
+            # dump debug if continue never enables
+            dump_debug(driver, "continue-not-enabled")
+            raise
 
-        # Password
-        WebDriverWait(driver, 25).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']"))
-        )
-        pw_elem = driver.find_element(By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']")
-        pw_elem.clear()
-        pw_elem.send_keys(password)
+        driver.find_element(
+            By.XPATH, "//button[contains(@class, 'my-custom-button') and not(@disabled)]"
+        ).click()
 
-        # Submit (try button labels first, then Enter)
-        clicked = click_first_matching_button(driver, ["Είσοδος", "Σύνδεση", "Login", "Sign in", "Submit", "Συνέχεια"])
-        if not clicked:
-            pw_elem.send_keys(Keys.ENTER)
+        # PASSWORD
+        pw_css = "input[type='password'][placeholder='Κωδικός πρόσβασης']"
+        pw_elem = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, pw_css))
+        )
+        type_like_human(pw_elem, password, delay=0.04)
+        force_input_events(driver, pw_elem)
+
+        # Submit via Enter (or you can add a button click if you find its text)
+        pw_elem.send_keys(Keys.ENTER)
 
         time.sleep(2)
         print("[DEBUG] after submit current_url:", driver.current_url)
@@ -238,14 +241,14 @@ def main():
 
     except (TimeoutException, NoSuchElementException) as e:
         dump_debug(driver, f"selenium-error: {e.__class__.__name__}")
-        print("Failed to find outstanding amount:", str(e))
+        print("Failed:", str(e))
         print(f"Debug files saved to: {DEBUG_DIR}")
         print(f" - {DEBUG_HTML_PATH}")
         print(f" - {DEBUG_SCREENSHOT_PATH}")
         print(f" - {DEBUG_PROBE_PATH}")
 
         if debug_sleep_seconds > 0:
-            print(f"[DEBUG] sleeping for {debug_sleep_seconds}s so you can inspect Samba /share...")
+            print(f"[DEBUG] sleeping for {debug_sleep_seconds}s ...")
             time.sleep(debug_sleep_seconds)
 
     finally:
