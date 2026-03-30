@@ -92,7 +92,7 @@ def do_login(driver, username, password):
 
     # Login page debug
     time.sleep(5)
-    debug_dump(driver, DEBUG_HTML_LOGIN, DEBUG_PNG_LOGIN, "login_page")
+   # debug_dump(driver, DEBUG_HTML_LOGIN, DEBUG_PNG_LOGIN, "login_page")
 
     # 1. username
     user_input = find_username_input(driver)
@@ -150,7 +150,7 @@ def do_login(driver, username, password):
         print("[DEBUG] Spinner not found or still visible, continuing anyway")
 
     print("After submit URL:", driver.current_url)
-    debug_dump(driver, DEBUG_HTML_AFTER, DEBUG_PNG_AFTER, "after_login")
+   # debug_dump(driver, DEBUG_HTML_AFTER, DEBUG_PNG_AFTER, "after_login")
 
 
 def wait_for_amount_text(driver, timeout=120):
