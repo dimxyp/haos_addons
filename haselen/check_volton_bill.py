@@ -32,10 +32,83 @@ def create_driver():
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
 
-    # Αν στο add-on ήδη χρησιμοποιείς διαφορετικό webdriver, προσαρμόσ’ το εδώ
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(60)
     return driver
+
+
+def debug_dump(driver, label: str):
+    """Αποθηκεύει HTML + screenshot για να δούμε τι βλέπει ο Selenium."""
+    try:
+        html_path = f"/tmp/volton_{label}.html"
+        png_path = f"/tmp/volton_{label}.png"
+
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        print(f"[DEBUG] Saved page source to {html_path}")
+
+        try:
+            driver.save_screenshot(png_path)
+            print(f"[DEBUG] Saved screenshot to {png_path}")
+        except Exception as e:
+            print(f"[DEBUG] Could not save screenshot: {e}")
+    except Exception as e:
+        print(f"[DEBUG] debug_dump failed: {e}")
+
+
+def find_username_input(driver):
+    """Δοκιμάζει διάφορους selectors για το πρώτο input."""
+    wait = WebDriverWait(driver, 20)
+
+    candidates = [
+        (By.CSS_SELECTOR, "input.inputField"),
+        (By.CSS_SELECTOR, "input[placeholder='Κινητό ή email']"),
+        (By.XPATH, "//input[@type='text']"),
+        (By.XPATH, "//div[contains(@class,'mainMobileLogin')]//input"),
+    ]
+
+    last_exc = None
+    for by, sel in candidates:
+        print(f"[DEBUG] Trying username selector: {by} = {sel}")
+        try:
+            el = wait.until(EC.presence_of_element_located((by, sel)))
+            print(f"[DEBUG] Found username input with selector: {by} = {sel}")
+            return el
+        except Exception as e:
+            print(f"[DEBUG] Selector failed: {by} = {sel} ({e})")
+            last_exc = e
+
+    raise last_exc or RuntimeError("Could not find username input")
+
+
+def find_password_input(driver):
+    """Δοκιμάζει διάφορους selectors για το password."""
+    wait = WebDriverWait(driver, 20)
+
+    candidates = [
+        (
+            By.CSS_SELECTOR,
+            "div[c-vdpasswordmainlogin_vdpasswordmainlogin] input[type='password']",
+        ),
+        (By.CSS_SELECTOR, "input[type='password']"),
+        (
+            By.XPATH,
+            "//div[contains(@c-vdpasswordmainlogin_vdpasswordmainlogin,'')]//input[@type='password']",
+        ),
+    ]
+
+    last_exc = None
+    for by, sel in candidates:
+        print(f"[DEBUG] Trying password selector: {by} = {sel}")
+        try:
+            el = wait.until(EC.presence_of_element_located((by, sel)))
+            print(f"[DEBUG] Found password input with selector: {by} = {sel}")
+            return el
+        except Exception as e:
+            print(f"[DEBUG] Selector failed: {by} = {sel} ({e})")
+            last_exc = e
+
+    raise last_exc or RuntimeError("Could not find password input")
 
 
 def do_login(driver, username, password):
@@ -43,24 +116,25 @@ def do_login(driver, username, password):
     print("Opening:", url)
     driver.get(url)
 
-    wait = WebDriverWait(driver, 30)
+    # Δίνουμε λίγο χρόνο να φορτώσει και γράφουμε debug
+    time.sleep(5)
+    debug_dump(driver, "login_page")
 
-    # --- 1. Πρώτη οθόνη: Κινητό ή email ---
-    # Χρησιμοποιούμε απλό selector με την class "inputField"
-    username_input = wait.until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, "input.inputField"))
-    )
+    # --- 1. Πρώτη οθόνη: username ---
+    username_input = find_username_input(driver)
     time.sleep(0.5)
     username_input.clear()
     username_input.send_keys(username)
     print("Typed username")
 
-    # Κουμπί "Συνέχεια" στην ίδια φόρμα (πρώτο button.my-custom-button)
+    # Βρίσκουμε το κουμπί "Συνέχεια" με χαλαρό selector
+    wait = WebDriverWait(driver, 20)
     continue_btn = wait.until(
         EC.element_to_be_clickable(
             (
-                By.CSS_SELECTOR,
-                "div[c-vd_mainlogininputphoneoremail_vd_mainlogininputphoneoremail] button.my-custom-button",
+                By.XPATH,
+                "//button[contains(@class,'my-custom-button') "
+                "and (text()='Συνέχεια' or normalize-space()='Συνέχεια')]",
             )
         )
     )
@@ -68,15 +142,10 @@ def do_login(driver, username, password):
     print("Clicked first 'Συνέχεια'")
 
     # --- 2. Δεύτερη οθόνη: password ---
-    password_input = wait.until(
-        EC.presence_of_element_located(
-            (
-                By.CSS_SELECTOR,
-                "div[c-vdpasswordmainlogin_vdpasswordmainlogin] "
-                "input[type='password']",
-            )
-        )
-    )
+    time.sleep(3)
+    debug_dump(driver, "password_page")
+
+    password_input = find_password_input(driver)
     time.sleep(0.5)
     password_input.clear()
     password_input.send_keys(password)
@@ -85,29 +154,28 @@ def do_login(driver, username, password):
     login_btn = wait.until(
         EC.element_to_be_clickable(
             (
-                By.CSS_SELECTOR,
-                "div[c-vdpasswordmainlogin_vdpasswordmainlogin] button.my-custom-button",
+                By.XPATH,
+                "//button[contains(@class,'my-custom-button') "
+                "and (text()='Σύνδεση' or normalize-space()='Σύνδεση')]",
             )
         )
     )
     login_btn.click()
     print("Clicked 'Σύνδεση'")
 
-    # --- 3. Περιμένουμε να φορτώσει η κεντρική σελίδα μετά το login ---
-    # Απλό wait: να αλλάξει το URL και να ΜΗΝ περιέχει "login"
+    # --- 3. Περιμένουμε να αλλάξει η σελίδα ---
     def logged_in(drv):
         url_now = drv.current_url or ""
         return "/myOn/s/" in url_now and "login" not in url_now
 
-    wait.until(logged_in)
-    print("Login appears successful. Current URL:", driver.current_url)
-
-    # Debug: screenshot για να το δούμε αν χρειαστεί
     try:
-        driver.save_screenshot("/tmp/volton_after_login.png")
-        print("Saved screenshot to /tmp/volton_after_login.png")
+        WebDriverWait(driver, 30).until(logged_in)
+        print("Login appears successful. Current URL:", driver.current_url)
+        debug_dump(driver, "after_login")
     except Exception as e:
-        print("Could not save screenshot:", e)
+        print("[DEBUG] Login did not complete as expected:", e)
+        debug_dump(driver, "login_failed")
+        raise
 
 
 def main():
@@ -115,7 +183,6 @@ def main():
     driver = create_driver()
     try:
         do_login(driver, opts["vusername"], opts["vpassword"])
-        # Εδώ αργότερα θα βάλουμε κώδικα για να πάρουμε υπόλοιπο λογαριασμού
         time.sleep(3)
     finally:
         driver.quit()
