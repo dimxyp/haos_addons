@@ -155,32 +155,26 @@ def do_login(driver, username, password):
 
 def wait_for_amount_text(driver, timeout=120):
     """
-    Βρίσκει το container που περιέχει 'Ανεξόφλητος λογαριασμός'
-    και μέσα του ψάχνει για κείμενο με '€'.
-    Επιστρέφει π.χ. '73.02€'.
+    Βρίσκει span[part='formatted-rich-text'] που περιέχει div με '€'
+    και επιστρέφει το text του div (π.χ. '73.02€').
     """
 
     def _has_amount(drv):
-        # 1. Βρίσκουμε όλα τα containers που περιέχουν το κείμενο 'Ανεξόφλητος λογαριασμός'
-        containers = drv.find_elements(
-            By.XPATH,
-            "//*[contains(normalize-space(.), 'Ανεξόφλητος λογαριασμός')]",
-        )
-        print(f"[DEBUG] containers with 'Ανεξόφλητος λογαριασμός': {len(containers)}")
+        spans = drv.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
+        print(f"[DEBUG] formatted-rich-text spans found: {len(spans)}")
 
-        for c in containers:
-            # 2. Μέσα σε κάθε container ψάχνουμε για στοιχείο που έχει '€'
-            euros = c.find_elements(By.XPATH, ".//*[contains(text(), '€')]")
-            print(f"[DEBUG]  euro elements in container: {len(euros)}")
-            for e in euros:
-                txt = (e.text or "").replace("\u00a0", " ").strip()
-                if "€" in txt:
-                    print(f"[DEBUG] Candidate amount text: {repr(txt)}")
+        for sp in spans:
+            # ψάχνουμε child div (εκεί είναι το κείμενο 73.02€)
+            divs = sp.find_elements(By.TAG_NAME, "div")
+            for d in divs:
+                txt = (d.text or "").replace("\u00a0", " ").strip()
+                if "€" in txt and any(ch.isdigit() for ch in txt):
+                    print(f"[DEBUG] Candidate amount div text: {repr(txt)}")
                     return txt
 
         return False
 
-    return WebDriverWait(driver, timeout).until(_has_amount)
+    return WebDriverWait(driver, timeout).until(_has_amount))
 
 
 def normalize_amount(raw_text):
