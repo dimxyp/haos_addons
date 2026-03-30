@@ -3,8 +3,8 @@ import os
 import time
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -12,12 +12,15 @@ OPTIONS_PATH = "/data/options.json"
 
 
 def load_options():
+    if not os.path.exists(OPTIONS_PATH):
+        raise FileNotFoundError(f"Options file '{OPTIONS_PATH}' not found")
+
     with open(OPTIONS_PATH, "r", encoding="utf-8") as f:
         opts = json.load(f)
 
     for key in ("vusername", "vpassword"):
         if key not in opts or not str(opts[key]).strip():
-            raise ValueError(f"Missing '{key}' in options.json")
+            raise ValueError(f"Missing '{key}' in options.json: {key}")
 
     return opts
 
@@ -29,6 +32,7 @@ def create_driver():
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
 
+    # Αν στο add-on ήδη χρησιμοποιείς διαφορετικό webdriver, προσαρμόσ’ το εδώ
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_page_load_timeout(60)
     return driver
@@ -36,59 +40,85 @@ def create_driver():
 
 def do_login(driver, username, password):
     url = "https://myon.volton.gr/myOn/s/?language=el"
+    print("Opening:", url)
     driver.get(url)
 
     wait = WebDriverWait(driver, 30)
 
-    # 1. Πρώτη οθόνη – κινητό / email
+    # --- 1. Πρώτη οθόνη: Κινητό ή email ---
+    # Χρησιμοποιούμε απλό selector με την class "inputField"
     username_input = wait.until(
-        EC.presence_of_element_located(
-            (By.CSS_SELECTOR, "input.inputField[placeholder='Κινητό ή email']")
-        )
+        EC.presence_of_element_located((By.CSS_SELECTOR, "input.inputField"))
     )
+    time.sleep(0.5)
     username_input.clear()
     username_input.send_keys(username)
+    print("Typed username")
 
-    # Περιμένουμε να ενεργοποιηθεί το κουμπί "Συνέχεια"
+    # Κουμπί "Συνέχεια" στην ίδια φόρμα (πρώτο button.my-custom-button)
     continue_btn = wait.until(
         EC.element_to_be_clickable(
-            (By.CSS_SELECTOR, "div[c-vd_mainlogininputphoneoremail_vd_mainlogininputphoneoremail] button.my-custom-button")
+            (
+                By.CSS_SELECTOR,
+                "div[c-vd_mainlogininputphoneoremail_vd_mainlogininputphoneoremail] button.my-custom-button",
+            )
         )
     )
     continue_btn.click()
+    print("Clicked first 'Συνέχεια'")
 
-    # 2. Δεύτερη οθόνη – password
+    # --- 2. Δεύτερη οθόνη: password ---
     password_input = wait.until(
         EC.presence_of_element_located(
-            (By.CSS_SELECTOR, "input[type='password'][placeholder='Κωδικός πρόσβασης']")
+            (
+                By.CSS_SELECTOR,
+                "div[c-vdpasswordmainlogin_vdpasswordmainlogin] "
+                "input[type='password']",
+            )
         )
     )
-    time.sleep(0.5)  # μικρό delay για σταθερότητα
+    time.sleep(0.5)
     password_input.clear()
     password_input.send_keys(password)
+    print("Typed password")
 
     login_btn = wait.until(
         EC.element_to_be_clickable(
-            (By.CSS_SELECTOR, "div[c-vdpasswordmainlogin_vdpasswordmainlogin] button.my-custom-button")
+            (
+                By.CSS_SELECTOR,
+                "div[c-vdpasswordmainlogin_vdpasswordmainlogin] button.my-custom-button",
+            )
         )
     )
     login_btn.click()
+    print("Clicked 'Σύνδεση'")
 
-    # 3. Περιμένουμε να ολοκληρωθεί το login (home σελίδα)
-    # Εδώ κάνουμε ένα generic wait π.χ. για URL που ΔΕΝ είναι πλέον /s/?language=el
-    wait.until(lambda d: "/myOn/s/" in d.current_url and "login" not in d.current_url)
-    print("Login seems successful, current URL:", driver.current_url)
+    # --- 3. Περιμένουμε να φορτώσει η κεντρική σελίδα μετά το login ---
+    # Απλό wait: να αλλάξει το URL και να ΜΗΝ περιέχει "login"
+    def logged_in(drv):
+        url_now = drv.current_url or ""
+        return "/myOn/s/" in url_now and "login" not in url_now
+
+    wait.until(logged_in)
+    print("Login appears successful. Current URL:", driver.current_url)
+
+    # Debug: screenshot για να το δούμε αν χρειαστεί
+    try:
+        driver.save_screenshot("/tmp/volton_after_login.png")
+        print("Saved screenshot to /tmp/volton_after_login.png")
+    except Exception as e:
+        print("Could not save screenshot:", e)
 
 
 def main():
     opts = load_options()
-    drv = create_driver()
+    driver = create_driver()
     try:
-        do_login(drv, opts["vusername"], opts["vpassword"])
-        # Εδώ αργότερα θα βάλουμε: παίρνω cookies -> requests για Aura -> TotalBalance
-        time.sleep(5)
+        do_login(driver, opts["vusername"], opts["vpassword"])
+        # Εδώ αργότερα θα βάλουμε κώδικα για να πάρουμε υπόλοιπο λογαριασμού
+        time.sleep(3)
     finally:
-        drv.quit()
+        driver.quit()
 
 
 if __name__ == "__main__":
