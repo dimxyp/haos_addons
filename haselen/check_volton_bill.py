@@ -40,8 +40,8 @@ def create_driver():
 def debug_dump(driver, label: str):
     """Αποθηκεύει HTML + screenshot για να δούμε τι βλέπει ο Selenium."""
     try:
-        html_path = f"/tmp/volton_{label}.html"
-        png_path = f"/tmp/volton_{label}.png"
+        html_path = f"/share/volton_debug/volton_{label}.html"
+        png_path = f"/share/volton_debug/volton_{label}.png"
 
         with open(html_path, "w", encoding="utf-8") as f:
             f.write(driver.page_source)
