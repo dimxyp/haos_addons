@@ -1,7 +1,9 @@
 import json
 import os
+import re
 import time
 
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -9,6 +11,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 OPTIONS_PATH = "/data/options.json"
+
+DEBUG_DIR = "/share/volton_debug"
+DEBUG_HTML_LOGIN = os.path.join(DEBUG_DIR, "volton_login_page.html")
+DEBUG_PNG_LOGIN = os.path.join(DEBUG_DIR, "volton_login_page.png")
+DEBUG_HTML_AFTER = os.path.join(DEBUG_DIR, "volton_after_login.html")
+DEBUG_PNG_AFTER = os.path.join(DEBUG_DIR, "volton_after_login.png")
 
 
 def load_options():
@@ -18,11 +26,34 @@ def load_options():
     with open(OPTIONS_PATH, "r", encoding="utf-8") as f:
         opts = json.load(f)
 
-    for key in ("vusername", "vpassword"):
+    for key in ("vusername", "vpassword", "haip", "token"):
         if key not in opts or not str(opts[key]).strip():
             raise ValueError(f"Missing '{key}' in options.json: {key}")
 
+    # entity_id όπου θα γράψουμε το ποσό
+    opts.setdefault("entity_id", "input_text.volton_b21")
+    opts.setdefault("debug_sleep_seconds", 0)
     return opts
+
+
+def ensure_debug_dir():
+    os.makedirs(DEBUG_DIR, exist_ok=True)
+
+
+def debug_dump(driver, html_path, png_path, label):
+    try:
+        ensure_debug_dir()
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        print(f"[DEBUG] Saved HTML ({label}) to {html_path}")
+    except Exception as e:
+        print(f"[DEBUG] Could not save HTML ({label}): {e}")
+
+    try:
+        driver.save_screenshot(png_path)
+        print(f"[DEBUG] Saved screenshot ({label}) to {png_path}")
+    except Exception as e:
+        print(f"[DEBUG] Could not save screenshot ({label}): {e}")
 
 
 def create_driver():
@@ -37,78 +68,22 @@ def create_driver():
     return driver
 
 
-def debug_dump(driver, label: str):
-    """Αποθηκεύει HTML + screenshot για να δούμε τι βλέπει ο Selenium."""
-    try:
-        html_path = f"/share/volton_debug/volton_{label}.html"
-        png_path = f"/share/volton_debug/volton_{label}.png"
-
-        with open(html_path, "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        print(f"[DEBUG] Saved page source to {html_path}")
-
-        try:
-            driver.save_screenshot(png_path)
-            print(f"[DEBUG] Saved screenshot to {png_path}")
-        except Exception as e:
-            print(f"[DEBUG] Could not save screenshot: {e}")
-    except Exception as e:
-        print(f"[DEBUG] debug_dump failed: {e}")
-
-
 def find_username_input(driver):
-    """Δοκιμάζει διάφορους selectors για το πρώτο input."""
+    # Δουλεύει ήδη στα logs σου αυτός ο selector
     wait = WebDriverWait(driver, 20)
-
-    candidates = [
-        (By.CSS_SELECTOR, "input.inputField"),
-        (By.CSS_SELECTOR, "input[placeholder='Κινητό ή email']"),
-        (By.XPATH, "//input[@type='text']"),
-        (By.XPATH, "//div[contains(@class,'mainMobileLogin')]//input"),
-    ]
-
-    last_exc = None
-    for by, sel in candidates:
-        print(f"[DEBUG] Trying username selector: {by} = {sel}")
-        try:
-            el = wait.until(EC.presence_of_element_located((by, sel)))
-            print(f"[DEBUG] Found username input with selector: {by} = {sel}")
-            return el
-        except Exception as e:
-            print(f"[DEBUG] Selector failed: {by} = {sel} ({e})")
-            last_exc = e
-
-    raise last_exc or RuntimeError("Could not find username input")
+    return wait.until(EC.presence_of_element_located((By.XPATH, "//input[@type='text']")))
 
 
 def find_password_input(driver):
-    """Δοκιμάζει διάφορους selectors για το password."""
     wait = WebDriverWait(driver, 20)
-
-    candidates = [
-        (
-            By.CSS_SELECTOR,
-            "div[c-vdpasswordmainlogin_vdpasswordmainlogin] input[type='password']",
-        ),
-        (By.CSS_SELECTOR, "input[type='password']"),
-        (
-            By.XPATH,
-            "//div[contains(@c-vdpasswordmainlogin_vdpasswordmainlogin,'')]//input[@type='password']",
-        ),
-    ]
-
-    last_exc = None
-    for by, sel in candidates:
-        print(f"[DEBUG] Trying password selector: {by} = {sel}")
-        try:
-            el = wait.until(EC.presence_of_element_located((by, sel)))
-            print(f"[DEBUG] Found password input with selector: {by} = {sel}")
-            return el
-        except Exception as e:
-            print(f"[DEBUG] Selector failed: {by} = {sel} ({e})")
-            last_exc = e
-
-    raise last_exc or RuntimeError("Could not find password input")
+    return wait.until(
+        EC.presence_of_element_located(
+            (
+                By.XPATH,
+                "//div[contains(@c-vdpasswordmainlogin_vdpasswordmainlogin,'')]//input[@type='password']",
+            )
+        )
+    )
 
 
 def do_login(driver, username, password):
@@ -116,18 +91,17 @@ def do_login(driver, username, password):
     print("Opening:", url)
     driver.get(url)
 
-    # Δίνουμε λίγο χρόνο να φορτώσει και γράφουμε debug
+    # Login page debug
     time.sleep(5)
-    debug_dump(driver, "login_page")
+    debug_dump(driver, DEBUG_HTML_LOGIN, DEBUG_PNG_LOGIN, "login_page")
 
-    # --- 1. Πρώτη οθόνη: username ---
-    username_input = find_username_input(driver)
+    # 1. username
+    user_input = find_username_input(driver)
     time.sleep(0.5)
-    username_input.clear()
-    username_input.send_keys(username)
+    user_input.clear()
+    user_input.send_keys(username)
     print("Typed username")
 
-    # Βρίσκουμε το κουμπί "Συνέχεια" με χαλαρό selector
     wait = WebDriverWait(driver, 20)
     continue_btn = wait.until(
         EC.element_to_be_clickable(
@@ -141,14 +115,12 @@ def do_login(driver, username, password):
     continue_btn.click()
     print("Clicked first 'Συνέχεια'")
 
-    # --- 2. Δεύτερη οθόνη: password ---
+    # 2. password
     time.sleep(3)
-    debug_dump(driver, "password_page")
-
-    password_input = find_password_input(driver)
+    pw_input = find_password_input(driver)
     time.sleep(0.5)
-    password_input.clear()
-    password_input.send_keys(password)
+    pw_input.clear()
+    pw_input.send_keys(password)
     print("Typed password")
 
     login_btn = wait.until(
@@ -163,27 +135,88 @@ def do_login(driver, username, password):
     login_btn.click()
     print("Clicked 'Σύνδεση'")
 
-    # --- 3. Περιμένουμε να αλλάξει η σελίδα ---
-    def logged_in(drv):
-        url_now = drv.current_url or ""
-        return "/myOn/s/" in url_now and "login" not in url_now
+    # Δίνουμε χρόνο να φορτώσει το dashboard
+    time.sleep(8)
+    print("After submit URL:", driver.current_url)
+    debug_dump(driver, DEBUG_HTML_AFTER, DEBUG_PNG_AFTER, "after_login")
+
+
+def wait_for_amount_text(driver, timeout=80):
+    """
+    Βρίσκει span[part='formatted-rich-text'] που περιέχει € και
+    επιστρέφει το κείμενο (π.χ. ' 73.02€ ').
+    """
+
+    def _has_amount(drv):
+        spans = drv.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
+        for sp in spans:
+            txt = sp.text or ""
+            txt = txt.replace("\u00a0", " ").strip()
+            if "€" in txt:
+                return txt
+        return False
+
+    return WebDriverWait(driver, timeout).until(_has_amount)
+
+
+def normalize_amount(raw_text):
+    """
+    Παίρνει κάτι σαν ' 73.02€ ' ή '73,02 €' και επιστρέφει '73.02'.
+    """
+    if raw_text is None:
+        return None
+    raw_text = raw_text.replace("\u00a0", " ").strip()
+    m = re.search(r"([0-9]+[.,][0-9]{2})", raw_text)
+    if not m:
+        return raw_text
+    val = m.group(1).replace(",", ".")
+    return val
+
+
+def update_input_text(entity_id, value, token, haip):
+    url = f"https://{haip}:8123/api/services/input_text/set_value"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "entity_id": entity_id,
+        "value": value,
+    }
 
     try:
-        WebDriverWait(driver, 30).until(logged_in)
-        print("Login appears successful. Current URL:", driver.current_url)
-        debug_dump(driver, "after_login")
-    except Exception as e:
-        print("[DEBUG] Login did not complete as expected:", e)
-        debug_dump(driver, "login_failed")
-        raise
+        response = requests.post(url, headers=headers, json=payload, verify=False)
+        if response.status_code == 200:
+            print(f"Updated {entity_id} to: {value}")
+        else:
+            print(f"Failed to update {entity_id}: {response.status_code} - {response.text}")
+    except requests.exceptions.RequestException as e:
+        print(f"API request failed: {e}")
 
 
 def main():
     opts = load_options()
+    haip = opts["haip"]
+    token = opts["token"]
+    entity_id = opts["entity_id"]
+
     driver = create_driver()
     try:
         do_login(driver, opts["vusername"], opts["vpassword"])
-        time.sleep(3)
+
+        print("Waiting for amount text ...")
+        raw = wait_for_amount_text(driver, timeout=80)
+        print("Raw amount text:", repr(raw))
+
+        amount = normalize_amount(raw)
+        print("Normalized amount:", amount)
+
+        update_input_text(entity_id, amount, token, haip)
+
+        debug_sleep = int(opts.get("debug_sleep_seconds", 0))
+        if debug_sleep > 0:
+            print(f"[DEBUG] Sleeping for {debug_sleep}s for inspection...")
+            time.sleep(debug_sleep)
     finally:
         driver.quit()
 
