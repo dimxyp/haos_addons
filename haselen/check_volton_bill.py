@@ -168,13 +168,14 @@ def wait_for_amount_text(driver, timeout=120):
             divs = sp.find_elements(By.TAG_NAME, "div")
             for d in divs:
                 txt = (d.text or "").replace("\u00a0", " ").strip()
+                # θέλουμε και € και τουλάχιστον ένα ψηφίο
                 if "€" in txt and any(ch.isdigit() for ch in txt):
                     print(f"[DEBUG] Candidate amount div text: {repr(txt)}")
                     return txt
 
         return False
 
-    return WebDriverWait(driver, timeout).until(_has_amount))
+    return WebDriverWait(driver, timeout).until(_has_amount)
 
 
 def normalize_amount(raw_text):
