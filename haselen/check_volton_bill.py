@@ -155,27 +155,40 @@ def do_login(driver, username, password):
 
 def wait_for_amount_text(driver, timeout=120):
     """
-    Βρίσκει span[part='formatted-rich-text'] που περιέχει div με '€'
-    και επιστρέφει το text του div (π.χ. '73.02€').
+    Παίρνει όλο το innerText της σελίδας μέσω JS και ψάχνει γύρω από
+    το 'Ανεξόφλητος λογαριασμός' για ποσό τύπου 73.02€.
+    Έτσι αποφεύγουμε το shadow DOM θέμα.
     """
 
-    def _has_amount(drv):
-        spans = drv.find_elements(By.CSS_SELECTOR, "span[part='formatted-rich-text']")
-        print(f"[DEBUG] formatted-rich-text spans found: {len(spans)}")
+    import textwrap
 
-        for sp in spans:
-            # ψάχνουμε child div (εκεί είναι το κείμενο 73.02€)
-            divs = sp.find_elements(By.TAG_NAME, "div")
-            for d in divs:
-                txt = (d.text or "").replace("\u00a0", " ").strip()
-                # θέλουμε και € και τουλάχιστον ένα ψηφίο
-                if "€" in txt and any(ch.isdigit() for ch in txt):
-                    print(f"[DEBUG] Candidate amount div text: {repr(txt)}")
+    def _has_amount(drv):
+        # Παίρνουμε το ορατό κείμενο της σελίδας
+        full_text = drv.execute_script("return document.body.innerText || ''")
+        if not full_text:
+            print("[DEBUG] innerText is empty")
+            return False
+
+        # Για debug – να μην γεμίσει τα logs:
+        snippet = "\n".join(full_text.splitlines()[:40])
+        print("[DEBUG] innerText first lines:\n" + textwrap.indent(snippet, "    "))
+
+        # Βρίσκουμε γραμμές που περιέχουν 'Ανεξόφλητος λογαριασμός'
+        lines = full_text.splitlines()
+        for i, line in enumerate(lines):
+            if "Ανεξόφλητος λογαριασμός" in line:
+                # Κοιτάμε αυτήν και τις επόμενες 3 γραμμές για pattern ποσού
+                window = "\n".join(lines[i : i + 4])
+                m = re.search(r"([0-9]+[.,][0-9]{2}\s*€)", window)
+                if m:
+                    txt = m.group(1)
+                    txt = txt.replace("\u00a0", " ").strip()
+                    print(f"[DEBUG] Candidate amount from innerText: {repr(txt)}")
                     return txt
 
         return False
 
-    return WebDriverWait(driver, timeout).until(_has_amount)
+    return WebDriverWait(driver, timeout).until(_has_amount))
 
 
 def normalize_amount(raw_text):
