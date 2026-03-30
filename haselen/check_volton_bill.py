@@ -159,7 +159,6 @@ def wait_for_amount_text(driver, timeout=120):
     το 'Ανεξόφλητος λογαριασμός' για ποσό τύπου 73.02€.
     Έτσι αποφεύγουμε το shadow DOM θέμα.
     """
-
     import textwrap
 
     def _has_amount(drv):
@@ -170,11 +169,11 @@ def wait_for_amount_text(driver, timeout=120):
             return False
 
         # Για debug – να μην γεμίσει τα logs:
-        snippet = "\n".join(full_text.splitlines()[:40])
+        lines = full_text.splitlines()
+        snippet = "\n".join(lines[:40])
         print("[DEBUG] innerText first lines:\n" + textwrap.indent(snippet, "    "))
 
         # Βρίσκουμε γραμμές που περιέχουν 'Ανεξόφλητος λογαριασμός'
-        lines = full_text.splitlines()
         for i, line in enumerate(lines):
             if "Ανεξόφλητος λογαριασμός" in line:
                 # Κοιτάμε αυτήν και τις επόμενες 3 γραμμές για pattern ποσού
@@ -188,7 +187,7 @@ def wait_for_amount_text(driver, timeout=120):
 
         return False
 
-    return WebDriverWait(driver, timeout).until(_has_amount))
+    return WebDriverWait(driver, timeout).until(_has_amount)
 
 
 def normalize_amount(raw_text):
