@@ -135,9 +135,8 @@ def do_login(driver, username, password):
         WebDriverWait(driver, 30).until_not(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".slds-spinner"))
         )
-        print("[DEBUG] Spinner disappeared")
     except Exception:
-        print("[DEBUG] Spinner not found or still visible, continuing anyway")
+        pass
 
     print("After submit URL:", driver.current_url)
 
@@ -209,6 +208,10 @@ def main():
     token = opts["token"]
     entity_id = opts["entity_id"]
 
+    # Clear the value first
+    update_input_text(entity_id, "", token, haip)
+    time.sleep(1)
+
     driver = create_driver()
     try:
         do_login(driver, opts["vusername"], opts["vpassword"])
@@ -224,7 +227,6 @@ def main():
 
         debug_sleep = int(opts.get("debug_sleep_seconds", 0))
         if debug_sleep > 0:
-            print(f"[DEBUG] Sleeping for {debug_sleep}s for inspection...")
             time.sleep(debug_sleep)
     finally:
         driver.quit()
