@@ -30,7 +30,6 @@ def load_options():
         if key not in opts or not str(opts[key]).strip():
             raise ValueError(f"Missing '{key}' in options.json: {key}")
 
-    # entity_id όπου θα γράψουμε το ποσό
     opts.setdefault("entity_id", "input_text.volton_b21")
     opts.setdefault("debug_sleep_seconds", 0)
     return opts
@@ -90,11 +89,8 @@ def do_login(driver, username, password):
     print("Opening:", url)
     driver.get(url)
 
-    # Login page debug
     time.sleep(5)
-   # debug_dump(driver, DEBUG_HTML_LOGIN, DEBUG_PNG_LOGIN, "login_page")
 
-    # 1. username
     user_input = find_username_input(driver)
     time.sleep(0.5)
     user_input.clear()
@@ -114,7 +110,6 @@ def do_login(driver, username, password):
     continue_btn.click()
     print("Clicked first 'Συνέχεια'")
 
-    # 2. password
     time.sleep(3)
     pw_input = find_password_input(driver)
     time.sleep(0.5)
@@ -134,56 +129,34 @@ def do_login(driver, username, password):
     login_btn.click()
     print("Clicked 'Σύνδεση'")
 
-    # Μεγάλο delay + προσπάθεια να περιμένουμε να τελειώσει το loading
-    # Πρώτα ένα σκληρό sleep για να φορτώσουν τα Aura scripts
     time.sleep(15)
 
-    # Optionally: αν υπάρχει γνωστό loader, μπορούμε να περιμένουμε να εξαφανιστεί
     try:
-        # Παράδειγμα: div με class "slds-spinner" ή κάτι παρόμοιο
         WebDriverWait(driver, 30).until_not(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".slds-spinner"))
         )
         print("[DEBUG] Spinner disappeared")
     except Exception:
-        # Αν δεν βρούμε spinner, συνεχίζουμε κανονικά
         print("[DEBUG] Spinner not found or still visible, continuing anyway")
 
     print("After submit URL:", driver.current_url)
-   # debug_dump(driver, DEBUG_HTML_AFTER, DEBUG_PNG_AFTER, "after_login")
 
 
 def wait_for_amount_text(driver, timeout=120):
-    """
-    Παίρνει όλο το innerText της σελίδας μέσω JS και ψάχνει γύρω από
-    το 'Ανεξόφλητος λογαριασμός' για ποσό τύπου 73.02€.
-    Έτσι αποφεύγουμε το shadow DOM θέμα.
-    """
-    import textwrap
-
     def _has_amount(drv):
-        # Παίρνουμε το ορατό κείμενο της σελίδας
         full_text = drv.execute_script("return document.body.innerText || ''")
         if not full_text:
-            print("[DEBUG] innerText is empty")
             return False
 
-        # Για debug – να μην γεμίσει τα logs:
-        lines = full_text.splitlines()
-        snippet = "\n".join(lines[:40])
-        print("[DEBUG] innerText first lines:\n" + textwrap.indent(snippet, "    "))
+        lines = [ln.strip() for ln in full_text.splitlines() if ln.strip()]
 
-        # Βρίσκουμε γραμμές που περιέχουν 'Ανεξόφλητος λογαριασμός'
         for i, line in enumerate(lines):
             if "Ανεξόφλητος λογαριασμός" in line:
-                # Κοιτάμε αυτήν και τις επόμενες 3 γραμμές για pattern ποσού
-                window = "\n".join(lines[i : i + 4])
-                m = re.search(r"([0-9]+[.,][0-9]{2}\s*€)", window)
+                window = " ".join(lines[i : i + 6])
+                m = re.search(r"(\d+(?:[.,]\d{1,2})?)\s*€", window)
                 if m:
-                    txt = m.group(1)
-                    txt = txt.replace("\u00a0", " ").strip()
-                    print(f"[DEBUG] Candidate amount from innerText: {repr(txt)}")
-                    return txt
+                    raw_num = m.group(1)
+                    return f"{raw_num}€"
 
         return False
 
@@ -191,17 +164,22 @@ def wait_for_amount_text(driver, timeout=120):
 
 
 def normalize_amount(raw_text):
-    """
-    Παίρνει κάτι σαν ' 73.02€ ' ή '73,02 €' και επιστρέφει '73.02'.
-    """
     if raw_text is None:
         return None
+
     raw_text = raw_text.replace("\u00a0", " ").strip()
-    m = re.search(r"([0-9]+[.,][0-9]{2})", raw_text)
+
+    m = re.search(r"(\d+(?:[.,]\d{1,2})?)", raw_text)
     if not m:
         return raw_text
-    val = m.group(1).replace(",", ".")
-    return val
+
+    num = m.group(1).replace(",", ".")
+    try:
+        val = float(num)
+    except ValueError:
+        return num
+
+    return f"{val:.2f}"
 
 
 def update_input_text(entity_id, value, token, haip):
