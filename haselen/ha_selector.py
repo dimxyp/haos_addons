@@ -63,6 +63,10 @@ if __name__ == '__main__':
             critical("********** Launching check_volton_bill.py **********")
             subprocess.run([sys.executable, "check_volton_bill.py"], check=True)
 
+        elif selector == "zenithb21":
+            critical("********** Launching check_zenith_bill_b21.py **********")
+            subprocess.run([sys.executable, "check_zenith_bill_b21.py"], check=True)
+
         else:
             # If you want *only* valid selections to show, you can remove this line
             critical(f"!!!!!!!!!! Unrecognized selector '{selector}' (nothing to do) !!!!!!!!!!")
