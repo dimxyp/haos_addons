@@ -41,6 +41,9 @@ entity_id = "input_text.zenith_power"
 haip = opts["haip"]
 token = opts["token"]
 
+# ---- target supply filter (only this supply) ----
+TARGET_SUPPLY_TOKEN = "13062870"
+
 def update_input_text(entity_id, value, token, haip):
     url = f"https://{haip}:8123/api/services/input_text/set_value"
     headers = {
@@ -53,7 +56,6 @@ def update_input_text(entity_id, value, token, haip):
         response = requests.post(url, headers=headers, json=payload, verify=False)
         if response.status_code != 200:
             critical(f"Failed to update {entity_id}: {response.status_code} - {response.text}")
-        # else: success is not critical -> no print
     except requests.exceptions.RequestException as e:
         critical(f"API request failed: {e}")
 
@@ -62,9 +64,7 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
-# Optional: silence chromedriver logs if they appear
 service = Service('/usr/bin/chromedriver', log_output="/dev/null")
-
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
 try:
@@ -77,7 +77,6 @@ try:
         ).click()
         info("Accepted cookies.")
     except Exception:
-        # not critical, keep silent
         pass
 
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "login")))
@@ -102,20 +101,26 @@ try:
     driver.get("https://myzenith.zenith.gr/bills/Electricity")
     info("Navigated to bills.")
 
-    WebDriverWait(driver, 15).until(
-        EC.presence_of_element_located(
-            (By.XPATH, '//span[contains(text(),"Συνολικό Ποσό Οφειλής")]/following-sibling::h4')
-        )
+    # 1) Find the correct "bill card" (article) that contains your supply number token
+    article = WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located((
+            By.XPATH,
+            (
+                '//article[contains(@class,"card--bill")]'
+                f'[.//span[normalize-space()="Αρ. Παροχής"]'
+                f'/following-sibling::span[contains(normalize-space(.), "{TARGET_SUPPLY_TOKEN}")]]'
+            )
+        ))
     )
 
-    value_elem = driver.find_element(
-        By.XPATH, '//span[contains(text(),"Συνολικό Ποσό Οφειλής")]/following-sibling::h4'
+    # 2) From inside that article, grab "Συνολικό Ποσό Οφειλής"
+    value_elem = article.find_element(
+        By.XPATH,
+        './/span[contains(normalize-space(.), "Συνολικό Ποσό Οφειλής")]/following-sibling::h4'
     )
     amount = value_elem.text.strip()
 
-    # choose what you consider "critical":
-    # If you want the amount printed every run, make it critical:
-    critical(f"Outstanding Amount: {amount}")
+    critical(f"Outstanding Amount ({TARGET_SUPPLY_TOKEN}): {amount}")
 
     clean_amount = amount.replace("€", "").strip()
     update_input_text(entity_id, clean_amount, token, haip)
@@ -123,7 +128,7 @@ try:
 except (TimeoutException, NoSuchElementException) as e:
     with open("/tmp/page_debug.html", "w", encoding="utf-8") as f:
         f.write(driver.page_source)
-    critical(f"Failed to find outstanding amount: {e}")
+    critical(f"Failed to find outstanding amount for supply token {TARGET_SUPPLY_TOKEN}: {e}")
     critical("Saved debug HTML to /tmp/page_debug.html")
 finally:
     driver.quit()
