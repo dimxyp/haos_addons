@@ -14,8 +14,8 @@ host_network: true
 options:
   zusername: "your_zenith_username"
   zpassword: "your_zenith_password"
-  vusername: "your_zenith_username"
-  vpassword: "your_zenith_password"
+  vusername: "your_volton_username"
+  vpassword: "your_volton_password"
   haip: "192.168.1.100"  # Home Assistant IP
   token: "YOUR_LONG_LIVED_ACCESS_TOKEN"
 schema:
