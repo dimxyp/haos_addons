@@ -37,7 +37,7 @@ def load_options():
 opts = load_options()
 username = opts["zusername"]
 password = opts["zpassword"]
-entity_id = "input_text.zenith_power"
+entity_id = "input_text.zenith_powerb21"
 haip = opts["haip"]
 token = opts["token"]
 
