@@ -47,21 +47,26 @@ if __name__ == '__main__':
 
     selector = get_input_text_value("input_text.haselenium", haip, token)
 
-    # This line is not critical; keep only if you want it visible
-    info(f"input_text.haselenium value: [{selector}]")
+    # Make selection very visible in plain-text logs
+    critical("\n" + "=" * 12 + f" SELECTED: {selector} " + "=" * 12)
 
     try:
         if selector == "zenith":
-            info("Launching check_zenith_bill.py ...")
+            critical("********** Launching check_zenith_bill.py **********")
             subprocess.run([sys.executable, "check_zenith_bill.py"], check=True)
+
         elif selector == "zenithgas":
-            info("Launching check_gas_bill.py ...")
+            critical("********** Launching check_gas_bill.py **********")
             subprocess.run([sys.executable, "check_gas_bill.py"], check=True)
+
         elif selector == "voltonb21":
-            info("Launching check_volton_bill.py ...")
+            critical("********** Launching check_volton_bill.py **********")
             subprocess.run([sys.executable, "check_volton_bill.py"], check=True)
+
         else:
-            info(f"Unrecognized value '{selector}'. Nothing to do.")
+            # If you want *only* valid selections to show, you can remove this line
+            critical(f"!!!!!!!!!! Unrecognized selector '{selector}' (nothing to do) !!!!!!!!!!")
+
     except subprocess.CalledProcessError as e:
-        critical(f"Child script failed: {e}")
+        critical(f"!!!!!!!!!! Child script failed: {e} !!!!!!!!!!")
         sys.exit(1)
