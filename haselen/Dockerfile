@@ -1,4 +1,5 @@
-FROM homeassistant/amd64-base:latest
+FROM alpine:latest
+#FROM homeassistant/amd64-base:latest
 
 # Install Python3, pip, Chromium/Chromedriver, and required dependencies
 RUN apk add --no-cache \
