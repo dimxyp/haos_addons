@@ -1,0 +1,2 @@
+routeros-api==0.18.1
+requests==2.32.3
