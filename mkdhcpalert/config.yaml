@@ -1,23 +1,41 @@
-name: "Mikorik DCHP Alert"
-version: "0.0.1"
-slug: haazrestcli
-description: "DHCP new Lease notifier"
-url: https://github.com/dimxyp/haos_addons/tree/main/mkdhcpalert
-panel_icon: mdi:powershell
+name: MikroTik DHCP Lease Watcher
+version: "1.0.0"
+slug: mikrotik_dhcp_lease_watcher
+description: Watches MikroTik DHCP leases and sends Home Assistant notifications on new devices.
+arch:
+  - amd64
+  - aarch64
+  - armv7
+  - armhf
 startup: services
 boot: auto
 init: false
-ingress: false
-arch:
-  - amd64
-host_network: true
+map:
+  - data:rw
 options:
-  tenant_id: null
-  client_id: null
-  client_secret: null
+  mikrotik_host: "192.168.1.254"
+  mikrotik_port: 8728
+  mikrotik_user: "apiuser"
+  mikrotik_password: ""
+  mikrotik_use_ssl: false
+
+  poll_seconds: 10
+  only_bound: true
+
+  ha_url: "http://homeassistant:8123"
+  ha_token: ""
+  ha_notify_service: "notify"   # notify.notify -> "notify", notify.mobile_app_x -> "mobile_app_x"
+
 schema:
-  tenant_id: str
-  client_id: str
-  client_secret: password
-ports:
-  5902/tcp: 5902
+  mikrotik_host: str
+  mikrotik_port: int
+  mikrotik_user: str
+  mikrotik_password: password
+  mikrotik_use_ssl: bool
+
+  poll_seconds: int
+  only_bound: bool
+
+  ha_url: str
+  ha_token: password
+  ha_notify_service: str
