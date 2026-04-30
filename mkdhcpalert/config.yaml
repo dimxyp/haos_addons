@@ -1,0 +1,23 @@
+name: "Mikorik DCHP Alert"
+version: "0.0.1"
+slug: haazrestcli
+description: "DHCP new Lease notifier"
+url: https://github.com/dimxyp/haos_addons/tree/main/mkdhcpalert
+panel_icon: mdi:powershell
+startup: services
+boot: auto
+init: false
+ingress: false
+arch:
+  - amd64
+host_network: true
+options:
+  tenant_id: null
+  client_id: null
+  client_secret: null
+schema:
+  tenant_id: str
+  client_id: str
+  client_secret: password
+ports:
+  5902/tcp: 5902
