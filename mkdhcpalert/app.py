@@ -1,27 +1,37 @@
+import json
 import os
 import time
-import json
-import requests
 from datetime import datetime
+
+import requests
 from routeros_api import RouterOsApiPool
 
-def env(name: str, default: str = "") -> str:
-    return os.getenv(name, default)
+OPTIONS_FILE = os.getenv("OPTIONS_FILE", "/data/options.json")
+STATE_FILE = os.getenv("STATE_FILE", "/data/state.json")
 
-MIKROTIK_HOST = env("MIKROTIK_HOST")
-MIKROTIK_USER = env("MIKROTIK_USER")
-MIKROTIK_PASS = env("MIKROTIK_PASS")
-MIKROTIK_PORT = int(env("MIKROTIK_PORT", "8728"))
-MIKROTIK_USE_SSL = env("MIKROTIK_USE_SSL", "false").lower() == "true"
 
-HA_URL = env("HA_URL", "http://homeassistant:8123").rstrip("/")
-HA_TOKEN = env("HA_TOKEN", "")
-HA_NOTIFY_SERVICE = env("HA_NOTIFY_SERVICE", "notify")
+def load_options():
+    defaults = {
+        "mikrotik_host": "192.168.1.254",
+        "mikrotik_port": 8728,
+        "mikrotik_user": "apiuser",
+        "mikrotik_password": "",
+        "mikrotik_use_ssl": False,
+        "poll_seconds": 10,
+        "only_bound": True,
+        "ha_url": "http://homeassistant:8123",
+        "ha_token": "",
+        "ha_notify_service": "notify",  # notify.notify => "notify"
+    }
+    try:
+        with open(OPTIONS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
+        defaults.update(data)
+    except FileNotFoundError:
+        # In some setups options might not exist yet; keep defaults.
+        pass
+    return defaults
 
-POLL_SECONDS = int(env("POLL_SECONDS", "10"))
-ONLY_BOUND = env("ONLY_BOUND", "true").lower() == "true"
-
-STATE_FILE = env("STATE_FILE", "/data/state.json")
 
 def load_state():
     try:
@@ -32,38 +42,29 @@ def load_state():
     except Exception:
         return {"seen_macs": []}
 
+
 def save_state(state):
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f)
 
-def ha_notify(title, message):
-    if not HA_TOKEN:
-        print("HA_TOKEN missing; skipping notify")
+
+def ha_notify(ha_url, ha_token, ha_notify_service, title, message):
+    if not ha_token:
+        print("ha_token missing; skipping notify")
         return
-    url = f"{HA_URL}/api/services/notify/{HA_NOTIFY_SERVICE}"
-    headers = {"Authorization": f"Bearer {HA_TOKEN}", "Content-Type": "application/json"}
+
+    ha_url = ha_url.rstrip("/")
+    url = f"{ha_url}/api/services/notify/{ha_notify_service}"
+    headers = {"Authorization": f"Bearer {ha_token}", "Content-Type": "application/json"}
     payload = {"title": title, "message": message}
+
     r = requests.post(url, headers=headers, json=payload, timeout=10)
     if r.status_code >= 300:
         print(f"Notify failed: {r.status_code} {r.text}")
     else:
         print("Notify sent")
 
-def connect():
-    if not (MIKROTIK_HOST and MIKROTIK_USER and MIKROTIK_PASS):
-        raise RuntimeError("Missing MikroTik env vars (MIKROTIK_HOST/USER/PASS)")
-
-    pool = RouterOsApiPool(
-        MIKROTIK_HOST,
-        username=MIKROTIK_USER,
-        password=MIKROTIK_PASS,
-        port=MIKROTIK_PORT,
-        use_ssl=MIKROTIK_USE_SSL,
-        ssl_verify=False,
-        plaintext_login=True,
-    )
-    return pool
 
 def normalize_lease(l):
     return {
@@ -74,20 +75,56 @@ def normalize_lease(l):
         "status": l.get("status", ""),
     }
 
+
+def connect(opts):
+    host = opts["mikrotik_host"]
+    user = opts["mikrotik_user"]
+    password = opts["mikrotik_password"]
+    port = int(opts["mikrotik_port"])
+    use_ssl = bool(opts["mikrotik_use_ssl"])
+
+    if not host or not user or not password:
+        raise RuntimeError("Missing MikroTik credentials/host in options.json")
+
+    pool = RouterOsApiPool(
+        host,
+        username=user,
+        password=password,
+        port=port,
+        use_ssl=use_ssl,
+        ssl_verify=False,
+        plaintext_login=True,
+    )
+    return pool
+
+
 def main():
+    opts = load_options()
     state = load_state()
     seen_macs = set(m.lower() for m in state.get("seen_macs", []) if isinstance(m, str))
 
-    print("Starting MikroTik DHCP lease watcher")
-    print(f"Polling={POLL_SECONDS}s ONLY_BOUND={ONLY_BOUND} MikroTik={MIKROTIK_HOST}:{MIKROTIK_PORT} SSL={MIKROTIK_USE_SSL}")
+    poll_seconds = int(opts["poll_seconds"])
+    only_bound = bool(opts["only_bound"])
+
+    print("Starting MikroTik DHCP lease watcher (options.json mode)")
+    print(
+        f"MikroTik={opts['mikrotik_host']}:{opts['mikrotik_port']} SSL={opts['mikrotik_use_ssl']} "
+        f"POLL={poll_seconds}s ONLY_BOUND={only_bound} OPTIONS_FILE={OPTIONS_FILE}"
+    )
 
     pool = None
     api = None
 
     while True:
         try:
+            # Reload options occasionally if you change add-on config without restart.
+            # (cheap and safe)
+            opts = load_options()
+            poll_seconds = int(opts["poll_seconds"])
+            only_bound = bool(opts["only_bound"])
+
             if pool is None:
-                pool = connect()
+                pool = connect(opts)
                 api = pool.get_api()
 
             leases = api.get_resource("/ip/dhcp-server/lease").get()
@@ -96,7 +133,7 @@ def main():
             for raw in leases:
                 lease = normalize_lease(raw)
 
-                if ONLY_BOUND and lease["status"] != "bound":
+                if only_bound and lease["status"] != "bound":
                     continue
 
                 mac = (lease["mac"] or "").lower().strip()
@@ -122,9 +159,15 @@ def main():
                         f"Time: {datetime.now().isoformat(timespec='seconds')}"
                     )
                     print("New device detected:", lease)
-                    ha_notify(title, msg)
+                    ha_notify(
+                        opts["ha_url"],
+                        opts["ha_token"],
+                        opts["ha_notify_service"],
+                        title,
+                        msg,
+                    )
 
-            time.sleep(POLL_SECONDS)
+            time.sleep(poll_seconds)
 
         except Exception as e:
             print("Error:", repr(e))
@@ -136,6 +179,7 @@ def main():
             pool = None
             api = None
             time.sleep(5)
+
 
 if __name__ == "__main__":
     main()
