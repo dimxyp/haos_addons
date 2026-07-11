@@ -16,10 +16,12 @@ app = Flask(__name__)
 
 MEDIA_PATH = "/media"
 
-# Common yt-dlp options: use Deno as JS runtime so YouTube extraction works
-# correctly and the client isn't forced to fall back to restricted player
-# clients (e.g. android_vr) which can report "This video is not available".
-COMMON_OPTS = ['--js-runtimes', 'deno']
+# Common yt-dlp options: use Deno as JS runtime plus the GitHub-hosted
+# remote components (EJS challenge solver script) so YouTube extraction
+# works correctly and the client isn't forced to fall back to restricted
+# player clients (e.g. android_vr) which can report "This video is not
+# available". See: https://github.com/yt-dlp/yt-dlp/wiki/EJS
+COMMON_OPTS = ['--js-runtimes', 'deno', '--remote-components', 'ejs:github']
 
 @app.route('/download', methods=['POST'])
 def download():
