@@ -21,8 +21,11 @@ MEDIA_PATH = "/media"
 # works correctly and the client isn't forced to fall back to restricted
 # player clients (e.g. android_vr) which can report "This video is not
 # available". See: https://github.com/yt-dlp/yt-dlp/wiki/EJS
+#
+# NOTE: when using the yt-dlp Python API, `js_runtimes` must be a dict of
+# {runtime: {config}}, not a list (unlike the CLI --js-runtimes flag).
 COMMON_YDL_OPTS = {
-    'js_runtimes': ['deno'],
+    'js_runtimes': {'deno': {}},
     'remote_components': ['ejs:github'],
     'quiet': True,
     'no_warnings': True,
