@@ -4,7 +4,7 @@ FROM python:3.11-slim
 RUN apt-get update && apt-get install -y ffmpeg && apt-get clean
 
 # Install yt-dlp and Flask
-RUN pip install --no-cache-dir yt-dlp flask
+RUN pip install --no-cache-dir yt-dlp==2026.07.04 flask
 
 # Create working directory
 WORKDIR /app
