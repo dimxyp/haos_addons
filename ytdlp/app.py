@@ -25,11 +25,18 @@ MEDIA_PATH = "/media"
 #
 # NOTE: when using the yt-dlp Python API, `js_runtimes` must be a dict of
 # {runtime: {config}}, not a list (unlike the CLI --js-runtimes flag).
+#
+# `noplaylist: True` ensures that when a URL points to a video that is
+# also part of a playlist/channel (e.g. a "watch?v=...&list=..." URL),
+# yt-dlp extracts just that single video instead of the whole
+# playlist/channel (which returns a "_type: playlist" info dict with
+# "entries" and no direct "url", causing "No stream URL found").
 COMMON_YDL_OPTS = {
     'js_runtimes': {'deno': {}},
     'remote_components': ['ejs:github'],
     'quiet': True,
     'no_warnings': True,
+    'noplaylist': True,
 }
 
 @app.route('/download', methods=['POST'])
@@ -53,6 +60,17 @@ def download():
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
+
+                # If we still got a playlist/channel result (e.g. the URL
+                # itself is a playlist/channel URL, not just a video that
+                # happens to belong to one), fall back to the first entry.
+                if info.get('_type') == 'playlist' or 'entries' in info:
+                    entries = list(info.get('entries') or [])
+                    if not entries:
+                        print("ERROR: yt-dlp returned an empty playlist/channel for url=%s" % url)
+                        return jsonify({"error": "No video found at URL (empty playlist/channel)"}), 500
+                    info = entries[0]
+
                 if 'url' not in info and info.get('requested_formats'):
                     info = info['requested_formats'][0]
                 stream_url = info.get('url')
@@ -85,7 +103,7 @@ def download():
             '-o', f'{target_dir}/%(title)s.%(ext)s'
         ]
 
-    common_opts = ['--js-runtimes', 'deno', '--remote-components', 'ejs:github']
+    common_opts = ['--js-runtimes', 'deno', '--remote-components', 'ejs:github', '--no-playlist']
 
     try:
         result = subprocess.run(
