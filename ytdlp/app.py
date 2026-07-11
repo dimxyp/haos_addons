@@ -21,7 +21,12 @@ MEDIA_PATH = "/media"
 # works correctly and the client isn't forced to fall back to restricted
 # player clients (e.g. android_vr) which can report "This video is not
 # available". See: https://github.com/yt-dlp/yt-dlp/wiki/EJS
-COMMON_OPTS = ['--js-runtimes', 'deno', '--remote-components', 'ejs:github']
+COMMON_YDL_OPTS = {
+    'js_runtimes': ['deno'],
+    'remote_components': ['ejs:github'],
+    'quiet': True,
+    'no_warnings': True,
+}
 
 @app.route('/download', methods=['POST'])
 def download():
@@ -33,17 +38,30 @@ def download():
         return jsonify({"error": "Missing or invalid parameters"}), 400
 
     if media_type == "stream":
+        # Extract the direct media URL together with the HTTP headers
+        # (User-Agent, Cookie, Referer, etc.) that the streaming URL
+        # requires. googlevideo.com URLs return 403 Forbidden if these
+        # headers are not sent along with the request, which is why
+        # opening the plain stream_url in a browser/media player fails
+        # even though this endpoint returns 200.
+        ydl_opts = dict(COMMON_YDL_OPTS)
+        ydl_opts['format'] = 'bestaudio/best'
         try:
-            result = subprocess.run(
-                ['yt-dlp'] + COMMON_OPTS + ['-f', 'bestaudio', '--get-url', url],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            stream_url = result.stdout.strip()
-            return jsonify({"status": "success", "stream_url": stream_url})
-        except subprocess.CalledProcessError as e:
-            return jsonify({"error": "yt-dlp failed", "details": e.stderr}), 500
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                if 'url' not in info and info.get('requested_formats'):
+                    info = info['requested_formats'][0]
+                stream_url = info.get('url')
+                http_headers = info.get('http_headers', {})
+                if not stream_url:
+                    return jsonify({"error": "No stream URL found"}), 500
+                return jsonify({
+                    "status": "success",
+                    "stream_url": stream_url,
+                    "http_headers": http_headers
+                })
+        except yt_dlp.utils.DownloadError as e:
+            return jsonify({"error": "yt-dlp failed", "details": str(e)}), 500
 
     subfolder = request.args.get("subfolder", "ytdowns")
     target_dir = os.path.join(MEDIA_PATH, subfolder, media_type)
@@ -60,8 +78,10 @@ def download():
             '-o', f'{target_dir}/%(title)s.%(ext)s'
         ]
 
+    common_opts = ['--js-runtimes', 'deno', '--remote-components', 'ejs:github']
+
     try:
-        subprocess.run(['yt-dlp'] + COMMON_OPTS + [url] + options, check=True)
+        subprocess.run(['yt-dlp'] + common_opts + [url] + options, check=True)
         return jsonify({"status": "success", "saved_to": target_dir})
     except subprocess.CalledProcessError as e:
         return jsonify({"error": str(e)}), 500
