@@ -1,10 +1,15 @@
 FROM python:3.11-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y ffmpeg && apt-get clean
+RUN apt-get update && apt-get install -y ffmpeg unzip curl && apt-get clean
+
+# Install Deno (JS runtime required by yt-dlp for YouTube extraction)
+RUN curl -fsSL https://deno.land/install.sh | sh -s -- -y \
+    && mv /root/.deno/bin/deno /usr/local/bin/deno
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Install yt-dlp and Flask
-RUN pip install --no-cache-dir yt-dlp==2026.07.04 flask
+RUN pip install --no-cache-dir -U yt-dlp flask
 
 # Create working directory
 WORKDIR /app
