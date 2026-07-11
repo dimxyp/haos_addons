@@ -16,6 +16,11 @@ app = Flask(__name__)
 
 MEDIA_PATH = "/media"
 
+# Common yt-dlp options: use Deno as JS runtime so YouTube extraction works
+# correctly and the client isn't forced to fall back to restricted player
+# clients (e.g. android_vr) which can report "This video is not available".
+COMMON_OPTS = ['--js-runtimes', 'deno']
+
 @app.route('/download', methods=['POST'])
 def download():
     data = request.get_json()
@@ -28,7 +33,7 @@ def download():
     if media_type == "stream":
         try:
             result = subprocess.run(
-                ['yt-dlp', '-f', 'bestaudio', '--get-url', url],
+                ['yt-dlp'] + COMMON_OPTS + ['-f', 'bestaudio', '--get-url', url],
                 capture_output=True,
                 text=True,
                 check=True
@@ -49,13 +54,12 @@ def download():
             '-x',
             '--audio-format', 'mp3',
             '--audio-quality', '0',
-            '--prefer-ffmpeg',
             '--ffmpeg-location', '/usr/bin/ffmpeg',
             '-o', f'{target_dir}/%(title)s.%(ext)s'
         ]
 
     try:
-        subprocess.run(['yt-dlp', url] + options, check=True)
+        subprocess.run(['yt-dlp'] + COMMON_OPTS + [url] + options, check=True)
         return jsonify({"status": "success", "saved_to": target_dir})
     except subprocess.CalledProcessError as e:
         return jsonify({"error": str(e)}), 500
