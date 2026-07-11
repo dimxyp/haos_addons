@@ -1,5 +1,10 @@
 FROM python:3.11-slim
 
+# Ensure stdout/stderr are unbuffered so print()/traceback output shows up
+# immediately in the Home Assistant add-on log viewer instead of being
+# buffered and lost.
+ENV PYTHONUNBUFFERED=1
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y ffmpeg unzip curl && apt-get clean
 
