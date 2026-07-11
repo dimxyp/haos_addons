@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import subprocess
 import os
+import traceback
 
 #versions on HA
 import importlib.metadata
@@ -57,13 +58,16 @@ def download():
                 stream_url = info.get('url')
                 http_headers = info.get('http_headers', {})
                 if not stream_url:
+                    print("ERROR: yt-dlp returned no stream URL. Info keys: %s" % list(info.keys()))
                     return jsonify({"error": "No stream URL found"}), 500
                 return jsonify({
                     "status": "success",
                     "stream_url": stream_url,
                     "http_headers": http_headers
                 })
-        except yt_dlp.utils.DownloadError as e:
+        except Exception as e:
+            print("ERROR in /download (stream): %s" % repr(e))
+            traceback.print_exc()
             return jsonify({"error": "yt-dlp failed", "details": str(e)}), 500
 
     subfolder = request.args.get("subfolder", "ytdowns")
@@ -84,10 +88,17 @@ def download():
     common_opts = ['--js-runtimes', 'deno', '--remote-components', 'ejs:github']
 
     try:
-        subprocess.run(['yt-dlp'] + common_opts + [url] + options, check=True)
+        result = subprocess.run(
+            ['yt-dlp'] + common_opts + [url] + options,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
         return jsonify({"status": "success", "saved_to": target_dir})
     except subprocess.CalledProcessError as e:
-        return jsonify({"error": str(e)}), 500
+        print("ERROR in /download (%s): stdout=%s stderr=%s" % (media_type, e.stdout, e.stderr))
+        return jsonify({"error": str(e), "stdout": e.stdout, "stderr": e.stderr}), 500
 
 @app.route('/')
 def index():
