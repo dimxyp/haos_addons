@@ -1,5 +1,5 @@
 name: "Rclone Cloud Mount"
-version: "1.0.0"
+version: "1.0.1"
 slug: harclone
 description: "Mount Azure Storage (or any rclone-supported remote) as a read/write folder in Home Assistant"
 url: https://github.com/dimxyp/haos_addons/tree/main/rclonebackup
@@ -13,10 +13,7 @@ arch:
   - aarch64
   - armv7
 host_network: false
-devices:
-  - /dev/fuse
-privileged:
-  - SYS_ADMIN
+full_access: true
 apparmor: false
 map:
   - share:rw
