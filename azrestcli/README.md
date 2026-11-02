@@ -54,7 +54,7 @@ POST http://[addon-ip]:[port]/run
 ```yaml
 rest_command:
   run_az_command:
-    url: "http://192.168.1.50:5902/run"
+    url: "http://127.0.0.1:5902/run"
     method: POST
     headers:
       Content-Type: application/json
