@@ -9,8 +9,8 @@ Use it to manage Azure resources from Home Assistant with `rest_command` and aut
 
 ## 🚀 Features
 
-- Small [Flask](https://flask.palletsprojects.com/) REST server inside the container
-- Signs in with an **Azure Service Principal** when the add-on starts
+- Small [Flask](https://flask.palletsprojects.com/) REST server inside the container.
+- Signs in with an **Azure Service Principal** when the add-on starts.
 - Runs commands **without a shell** (`shlex` + `shell=False`). Only `az` commands are accepted, and `;`, `&&`, `|` do not work
 - Runs **one command or a list of commands**, always in order (one batch at a time, so commands never race on the same resource)
 - **Async** by default, or **sync** (`"wait": true`) to get the result in the response
